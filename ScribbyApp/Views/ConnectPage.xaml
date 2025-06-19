@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:views="clr-namespace:ScribbyApp.Views"
+             xmlns:viewmodels="clr-namespace:ScribbyApp.ViewModels"  
+             x:Class="ScribbyApp.Views.ConnectPage"
+             x:DataType="views:ConnectPage"
+             Title="Connect to Device">
+
+    <!-- The rest of the page is the same until the CollectionView -->
+    <ScrollView>
+        <VerticalStackLayout Spacing="10" Padding="10">
+
+            <!-- ... Status Section ... -->
+            <Border BackgroundColor="#F0F0F0" Padding="10">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="5"/>
+                </Border.StrokeShape>
+                <StackLayout>
+                    <Label Text="Status:" FontSize="Medium" FontAttributes="Bold" />
+                    <Label x:Name="StatusLabel" Text="Bluetooth status unknown" FontSize="Small"/>
+                    <Label Text="Connection:" FontSize="Medium" FontAttributes="Bold" Margin="0,10,0,0" />
+                    <Label x:Name="ConnectionLabel" Text="Not Connected" FontSize="Small" TextColor="Red"/>
+                </StackLayout>
+            </Border>
+
+            <!-- ... Actions Section ... -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,10,0,0">
+                <Button x:Name="ScanButton" Grid.Column="0" Text="Start Scan" Clicked="OnScanButtonClicked" />
+                <Button x:Name="DisconnectButton" Grid.Column="1" Text="Disconnect" Clicked="OnDisconnectButtonClicked" IsEnabled="False" />
+            </Grid>
+
+            <!-- Discovered Devices Section -->
+            <Border Stroke="LightGray" Padding="0" Margin="0,10,0,0">
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="3,3" Radius="5" Opacity="0.2"/>
+                </Border.Shadow>
+                <VerticalStackLayout>
+                    <Label Text="Discovered Devices" FontSize="Large" FontAttributes="Bold" Padding="10" BackgroundColor="LightGray"/>
+                    <CollectionView ItemsSource="{Binding DiscoveredDevices}" HeightRequest="400">
+                        <CollectionView.ItemTemplate>
+                            <!-- *** KEY CHANGE HERE *** -->
+                            <!-- We now use the 'viewmodels' alias to find the DeviceViewModel -->
+                            <DataTemplate x:DataType="viewmodels:DeviceViewModel">
+                                <Grid Padding="10" ColumnDefinitions="*,Auto">
+                                    <VerticalStackLayout Grid.Column="0">
+                                        <Label Text="{Binding Device.Name, StringFormat='Name: {0}'}" FontAttributes="Bold" />
+                                        <Label Text="{Binding Device.Id, StringFormat='ID: {0}'}" FontSize="Micro" />
+                                    </VerticalStackLayout>
+
+                                    <Button Grid.Column="1" 
+                                            Text="{Binding ButtonText}" 
+                                            IsEnabled="{Binding IsButtonEnabled}"
+                                            Clicked="OnConnectButtonClicked" 
+                                            CommandParameter="{Binding .}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </Border>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

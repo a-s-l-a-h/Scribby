@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScribbyApp.Views.ControlPage"
+             Title="Device Control">
+
+    <Grid RowDefinitions="Auto, Auto, *, Auto"
+          ColumnDefinitions="*"
+          Padding="15"
+          RowSpacing="20">
+
+        <!-- Row 0: Title -->
+        <Label
+            Grid.Row="0"
+            Text="Remote Control"
+            FontSize="Header"
+            FontAttributes="Bold"
+            HorizontalOptions="Center" />
+
+        <!-- Row 1: Status Box -->
+        <Border Grid.Row="1" StrokeThickness="1" Padding="10">
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="5"/>
+            </Border.StrokeShape>
+            <VerticalStackLayout Spacing="5">
+                <Label Text="Status" FontAttributes="Bold" />
+                <Label x:Name="StatusLabel" Text="Ready for commands." />
+            </VerticalStackLayout>
+        </Border>
+
+        <!-- Row 2: The D-Pad Grid -->
+        <Grid Grid.Row="2"
+              ColumnDefinitions="*,*,*"
+              RowDefinitions="*,*,*"
+              VerticalOptions="Center"
+              HorizontalOptions="Center"
+              WidthRequest="240"
+              HeightRequest="240">
+
+            <!-- "W" Button (Forward) -->
+            <!-- *** UPDATED: Using Pressed/Released events *** -->
+            <Button Grid.Row="0" Grid.Column="1"
+                    x:Name="ForwardButton"
+                    Text="W"
+                    Pressed="OnDirectionalButtonPressed"
+                    Released="OnDirectionalButtonReleased"
+                    CommandParameter="w"
+                    Style="{StaticResource RemoteButtonStyle}"
+                    BackgroundColor="CornflowerBlue" />
+
+            <!-- "A" Button (Left) -->
+            <!-- *** UPDATED: Using Pressed/Released events *** -->
+            <Button Grid.Row="1" Grid.Column="0"
+                    x:Name="LeftButton"
+                    Text="A"
+                    Pressed="OnDirectionalButtonPressed"
+                    Released="OnDirectionalButtonReleased"
+                    CommandParameter="a"
+                    Style="{StaticResource RemoteButtonStyle}"
+                    BackgroundColor="DarkSeaGreen" />
+
+            <!-- "S" Button (Stop) - This remains a simple Click button -->
+            <Button Grid.Row="1" Grid.Column="1"
+                    x:Name="StopButton"
+                    Text="S"
+                    Clicked="OnStopButtonClicked"
+                    Style="{StaticResource RemoteButtonStyle}"
+                    BackgroundColor="Orange" />
+
+            <!-- "D" Button (Right) -->
+            <!-- *** UPDATED: Using Pressed/Released events *** -->
+            <Button Grid.Row="1" Grid.Column="2"
+                    x:Name="RightButton"
+                    Text="D"
+                    Pressed="OnDirectionalButtonPressed"
+                    Released="OnDirectionalButtonReleased"
+                    CommandParameter="d"
+                    Style="{StaticResource RemoteButtonStyle}"
+                    BackgroundColor="DarkSeaGreen" />
+
+        </Grid>
+
+        <!-- Row 3: "X" Button (Back) -->
+        <!-- *** UPDATED: Using Pressed/Released events *** -->
+        <Button Grid.Row="3"
+                x:Name="BackButton"
+                Text="X"
+                Pressed="OnDirectionalButtonPressed"
+                Released="OnDirectionalButtonReleased"
+                CommandParameter="x"
+                Style="{StaticResource RemoteButtonStyle}"
+                BackgroundColor="IndianRed"
+                HorizontalOptions="Center"
+                VerticalOptions="End" />
+
+    </Grid>
+</ContentPage>
