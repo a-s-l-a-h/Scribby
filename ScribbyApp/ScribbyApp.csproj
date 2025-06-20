@@ -64,7 +64,121 @@
 		<PackageReference Include="Plugin.BLE" Version="3.1.0" />
 	</ItemGroup>
 
+	<!-- ===================================================================== -->
+	<!-- Native Library References                                             -->
+	<!-- ===================================================================== -->
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<!-- llama.cpp related (example, replace with actual filenames and ABIs if you have them for Android) -->
+		<!--
+		<AndroidNativeLibrary Include="Platforms\Android\libs\arm64-v8a\libllama.so" Condition="Exists('Platforms\Android\libs\arm64-v8a\libllama.so')">
+			<Link>lib\arm64-v8a\libllama.so</Link>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\arm64-v8a\libggml.so" Condition="Exists('Platforms\Android\libs\arm64-v8a\libggml.so')">
+			<Link>lib\arm64-v8a\libggml.so</Link>
+		</AndroidNativeLibrary>
+		-->
+		<!-- Add other llama.cpp .so files for Android here (e.g., libggml-base.so, libggml-cpu.so, libchat.so) -->
+	</ItemGroup>
+
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
+		<!-- llama.cpp related (example, replace with actual filenames and kind if you have them for iOS) -->
+		<!--
+		<NativeFileReference Include="Platforms\iOS\libs\libllama.a" Kind="Static" Condition="Exists('Platforms\iOS\libs\libllama.a')" />
+		<NativeFileReference Include="Platforms\iOS\libs\libggml.a" Kind="Static" Condition="Exists('Platforms\iOS\libs\libggml.a')" />
+		-->
+		<!-- Or if they are .dylib:
+		<NativeFileReference Include="Platforms\iOS\libs\libllama.dylib" Kind="Dynamic" Condition="Exists('Platforms\iOS\libs\libllama.dylib')" />
+		-->
+		<!-- Add other llama.cpp .a or .dylib files for iOS here -->
+	</ItemGroup>
+
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">
+		<!-- llama.cpp related (example, replace with actual filenames and kind if you have them for MacCatalyst) -->
+		<!--
+		<NativeFileReference Include="Platforms\MacCatalyst\libs\libllama.dylib" Kind="Dynamic" Condition="Exists('Platforms\MacCatalyst\libs\libllama.dylib')" />
+		<NativeFileReference Include="Platforms\MacCatalyst\libs\libggml.dylib" Kind="Dynamic" Condition="Exists('Platforms\MacCatalyst\libs\libggml.dylib')" />
+		-->
+		<!-- Add other llama.cpp .dylib files for MacCatalyst here -->
+	</ItemGroup>
+
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+		<!-- llama.cpp related DLLs -->
+		<!-- chat.dll -->
+		<Content Include="Platforms\Windows\libs\x64\chat.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\chat.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>chat.dll</Link>
+		</Content>
+		<Content Include="Platforms\Windows\libs\x86\chat.dll" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\chat.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>chat.dll</Link>
+		</Content>
+
+		<!-- ggml-base.dll -->
+		<Content Include="Platforms\Windows\libs\x64\ggml-base.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\ggml-base.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>ggml-base.dll</Link>
+		</Content>
+		<Content Include="Platforms\Windows\libs\x86\ggml-base.dll" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\ggml-base.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>ggml-base.dll</Link>
+		</Content>
+
+		<!-- ggml-cpu.dll -->
+		<Content Include="Platforms\Windows\libs\x64\ggml-cpu.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\ggml-cpu.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>ggml-cpu.dll</Link>
+		</Content>
+		<Content Include="Platforms\Windows\libs\x86\ggml-cpu.dll" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\ggml-cpu.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>ggml-cpu.dll</Link>
+		</Content>
+
+		<!-- ggml.dll -->
+		<Content Include="Platforms\Windows\libs\x64\ggml.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\ggml.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>ggml.dll</Link>
+		</Content>
+		<Content Include="Platforms\Windows\libs\x86\ggml.dll" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\ggml.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>ggml.dll</Link>
+		</Content>
+
+		<!-- llama.dll -->
+		<Content Include="Platforms\Windows\libs\x64\llama.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\llama.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>llama.dll</Link>
+		</Content>
+		<Content Include="Platforms\Windows\libs\x86\llama.dll" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\llama.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>llama.dll</Link>
+		</Content>
+		<!-- Optional .lib files for llama.cpp related DLLs if you have them and want to include them for some reason (not typically needed for P/Invoke) -->
+		<!--
+		<Content Include="Platforms\Windows\libs\x64\llama.lib" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\llama.lib')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>llama.lib</Link>
+		</Content>
+		<Content Include="Platforms\Windows\libs\x86\llama.lib" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\llama.lib')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>llama.lib</Link>
+		</Content>
+		-->
+	</ItemGroup>
+
+	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">
+		<!-- llama.cpp related (example, replace with actual filename if you have them for Tizen) -->
+		<!--
+		<SharedLibrary Include="Platforms\Tizen\libs\libllama.so" Condition="Exists('Platforms\Tizen\libs\libllama.so')" />
+		<SharedLibrary Include="Platforms\Tizen\libs\libggml.so" Condition="Exists('Platforms\Tizen\libs\libggml.so')" />
+		-->
+		<!-- Add other llama.cpp .so files for Tizen here -->
+	</ItemGroup>
+	<!-- ===================================================================== -->
+
 	<ItemGroup>
+	  <MauiXaml Update="Views\ChatLLMPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Views\ConnectPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

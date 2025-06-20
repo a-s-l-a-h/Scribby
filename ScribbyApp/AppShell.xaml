@@ -41,6 +41,14 @@
                 Route="ScriptPage" />
         </Tab>
 
+        <Tab Title="Chat LLM" Icon="chat.png">
+            <!-- Ensure chat.png exists in Resources/Images or change it -->
+            <ShellContent
+                Title="Chat LLM"
+                ContentTemplate="{DataTemplate views:ChatLLMPage}"
+                Route="ChatLLMPage" />
+        </Tab>
+
     </TabBar>
 
 </Shell>
