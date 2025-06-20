@@ -6,13 +6,6 @@
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
 
-		<!-- Note for MacCatalyst:
-		The default runtime is maccatalyst-x64, except in Release config, in which case the default is maccatalyst-x64;maccatalyst-arm64.
-		When specifying both architectures, use the plural <RuntimeIdentifiers> instead of the singular <RuntimeIdentifier>.
-		The Mac App Store will NOT accept apps with ONLY maccatalyst-arm64 indicated;
-		either BOTH runtimes must be indicated or ONLY macatalyst-x64. -->
-		<!-- For example: <RuntimeIdentifiers>maccatalyst-x64;maccatalyst-arm64</RuntimeIdentifiers> -->
-
 		<OutputType>Exe</OutputType>
 		<RootNamespace>ScribbyApp</RootNamespace>
 		<UseMaui>true</UseMaui>
@@ -20,13 +13,8 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
-		<!-- Display name -->
 		<ApplicationTitle>ScribbyApp</ApplicationTitle>
-
-		<!-- App Identifier -->
 		<ApplicationId>com.companyname.scribbyapp</ApplicationId>
-
-		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
 
@@ -41,18 +29,10 @@
 	<ItemGroup>
 		<!-- App Icon -->
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
-
-		<!-- Splash Screen -->
 		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
-
-		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
-
-		<!-- Custom Fonts -->
 		<MauiFont Include="Resources\Fonts\*" />
-
-		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
@@ -67,130 +47,170 @@
 	<!-- ===================================================================== -->
 	<!-- Native Library References                                             -->
 	<!-- ===================================================================== -->
+
+	<!-- ANDROID NATIVE LIBRARIES -->
 	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
-		<!-- llama.cpp related (example, replace with actual filenames and ABIs if you have them for Android) -->
-		<!--
+		<!-- ARM64-V8A -->
+		<AndroidNativeLibrary Include="Platforms\Android\libs\arm64-v8a\libomp.so" Condition="Exists('Platforms\Android\libs\arm64-v8a\libomp.so')">
+			<Link>lib\arm64-v8a\libomp.so</Link>
+			<Abi>arm64-v8a</Abi>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\arm64-v8a\libchat.so" Condition="Exists('Platforms\Android\libs\arm64-v8a\libchat.so')">
+			<Link>lib\arm64-v8a\libchat.so</Link>
+			<Abi>arm64-v8a</Abi>
+		</AndroidNativeLibrary>
 		<AndroidNativeLibrary Include="Platforms\Android\libs\arm64-v8a\libllama.so" Condition="Exists('Platforms\Android\libs\arm64-v8a\libllama.so')">
 			<Link>lib\arm64-v8a\libllama.so</Link>
+			<Abi>arm64-v8a</Abi>
 		</AndroidNativeLibrary>
 		<AndroidNativeLibrary Include="Platforms\Android\libs\arm64-v8a\libggml.so" Condition="Exists('Platforms\Android\libs\arm64-v8a\libggml.so')">
 			<Link>lib\arm64-v8a\libggml.so</Link>
+			<Abi>arm64-v8a</Abi>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\arm64-v8a\libggml-base.so" Condition="Exists('Platforms\Android\libs\arm64-v8a\libggml-base.so')">
+			<Link>lib\arm64-v8a\libggml-base.so</Link>
+			<Abi>arm64-v8a</Abi>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\arm64-v8a\libggml-cpu.so" Condition="Exists('Platforms\Android\libs\arm64-v8a\libggml-cpu.so')">
+			<Link>lib\arm64-v8a\libggml-cpu.so</Link>
+			<Abi>arm64-v8a</Abi>
+		</AndroidNativeLibrary>
+		    <!-- ADD THIS LINE FOR LIBOMP.SO -->
+
+		<!-- If you have liblua54.so for arm64-v8a and it's needed by chat/llama, include it too.
+		     If it's only for NLua's C# scripting, it's typically handled by NLua's package.
+		     But if your native `chat` code ALSO uses Lua, then you might need to explicitly package it:
+		<AndroidNativeLibrary Include="Platforms\Android\libs\arm64-v8a\liblua54.so" Condition="Exists('Platforms\Android\libs\arm64-v8a\liblua54.so')">
+			<Link>lib\arm64-v8a\liblua54.so</Link>
+			<Abi>arm64-v8a</Abi>
 		</AndroidNativeLibrary>
 		-->
-		<!-- Add other llama.cpp .so files for Android here (e.g., libggml-base.so, libggml-cpu.so, libchat.so) -->
+
+		<!-- ARMEABI-V7A -->
+		<!-- IMPORTANT: Only uncomment/include these if you HAVE these files compiled for armeabi-v7a -->
+		<AndroidNativeLibrary Include="Platforms\Android\libs\armeabi-v7a\libchat.so" Condition="Exists('Platforms\Android\libs\armeabi-v7a\libchat.so')">
+			<Link>lib\armeabi-v7a\libchat.so</Link>
+			<Abi>armeabi-v7a</Abi>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\armeabi-v7a\libllama.so" Condition="Exists('Platforms\Android\libs\armeabi-v7a\libllama.so')">
+			<Link>lib\armeabi-v7a\libllama.so</Link>
+			<Abi>armeabi-v7a</Abi>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\armeabi-v7a\libggml.so" Condition="Exists('Platforms\Android\libs\armeabi-v7a\libggml.so')">
+			<Link>lib\armeabi-v7a\libggml.so</Link>
+			<Abi>armeabi-v7a</Abi>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\armeabi-v7a\libggml-base.so" Condition="Exists('Platforms\Android\libs\armeabi-v7a\libggml-base.so')">
+			<Link>lib\armeabi-v7a\libggml-base.so</Link>
+			<Abi>armeabi-v7a</Abi>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\armeabi-v7a\libggml-cpu.so" Condition="Exists('Platforms\Android\libs\armeabi-v7a\libggml-cpu.so')">
+			<Link>lib\armeabi-v7a\libggml-cpu.so</Link>
+			<Abi>armeabi-v7a</Abi>
+		</AndroidNativeLibrary>
+		<!--
+		<AndroidNativeLibrary Include="Platforms\Android\libs\armeabi-v7a\liblua54.so" Condition="Exists('Platforms\Android\libs\armeabi-v7a\liblua54.so')">
+			<Link>lib\armeabi-v7a\liblua54.so</Link>
+			<Abi>armeabi-v7a</Abi>
+		</AndroidNativeLibrary>
+		-->
+
+		<!-- X86_64 (for emulators) -->
+		<!-- IMPORTANT: Only uncomment/include these if you HAVE these files compiled for x86_64 -->
+		<AndroidNativeLibrary Include="Platforms\Android\libs\x86_64\libchat.so" Condition="Exists('Platforms\Android\libs\x86_64\libchat.so')">
+			<Link>lib\x86_64\libchat.so</Link>
+			<Abi>x86_64</Abi>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\x86_64\libllama.so" Condition="Exists('Platforms\Android\libs\x86_64\libllama.so')">
+			<Link>lib\x86_64\libllama.so</Link>
+			<Abi>x86_64</Abi>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\x86_64\libggml.so" Condition="Exists('Platforms\Android\libs\x86_64\libggml.so')">
+			<Link>lib\x86_64\libggml.so</Link>
+			<Abi>x86_64</Abi>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\x86_64\libggml-base.so" Condition="Exists('Platforms\Android\libs\x86_64\libggml-base.so')">
+			<Link>lib\x86_64\libggml-base.so</Link>
+			<Abi>x86_64</Abi>
+		</AndroidNativeLibrary>
+		<AndroidNativeLibrary Include="Platforms\Android\libs\x86_64\libggml-cpu.so" Condition="Exists('Platforms\Android\libs\x86_64\libggml-cpu.so')">
+			<Link>lib\x86_64\libggml-cpu.so</Link>
+			<Abi>x86_64</Abi>
+		</AndroidNativeLibrary>
+		<!--
+		<AndroidNativeLibrary Include="Platforms\Android\libs\x86_64\liblua54.so" Condition="Exists('Platforms\Android\libs\x86_64\liblua54.so')">
+			<Link>lib\x86_64\liblua54.so</Link>
+			<Abi>x86_64</Abi>
+		</AndroidNativeLibrary>
+		-->
 	</ItemGroup>
 
+
+	<!-- IOS NATIVE LIBRARIES (Placeholder - Update when you have iOS libs) -->
 	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">
-		<!-- llama.cpp related (example, replace with actual filenames and kind if you have them for iOS) -->
+		<!-- Example for iOS (replace with actual files and Kind - Static or Dynamic) -->
 		<!--
+		<NativeFileReference Include="Platforms\iOS\libs\libchat.a" Kind="Static" Condition="Exists('Platforms\iOS\libs\libchat.a')" />
 		<NativeFileReference Include="Platforms\iOS\libs\libllama.a" Kind="Static" Condition="Exists('Platforms\iOS\libs\libllama.a')" />
-		<NativeFileReference Include="Platforms\iOS\libs\libggml.a" Kind="Static" Condition="Exists('Platforms\iOS\libs\libggml.a')" />
 		-->
-		<!-- Or if they are .dylib:
-		<NativeFileReference Include="Platforms\iOS\libs\libllama.dylib" Kind="Dynamic" Condition="Exists('Platforms\iOS\libs\libllama.dylib')" />
-		-->
-		<!-- Add other llama.cpp .a or .dylib files for iOS here -->
 	</ItemGroup>
 
+	<!-- MACCATALYST NATIVE LIBRARIES (Placeholder - Update when you have MacCatalyst libs) -->
 	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">
-		<!-- llama.cpp related (example, replace with actual filenames and kind if you have them for MacCatalyst) -->
+		<!-- Example for MacCatalyst (usually .dylib) -->
 		<!--
+		<NativeFileReference Include="Platforms\MacCatalyst\libs\libchat.dylib" Kind="Dynamic" Condition="Exists('Platforms\MacCatalyst\libs\libchat.dylib')" />
 		<NativeFileReference Include="Platforms\MacCatalyst\libs\libllama.dylib" Kind="Dynamic" Condition="Exists('Platforms\MacCatalyst\libs\libllama.dylib')" />
-		<NativeFileReference Include="Platforms\MacCatalyst\libs\libggml.dylib" Kind="Dynamic" Condition="Exists('Platforms\MacCatalyst\libs\libggml.dylib')" />
 		-->
-		<!-- Add other llama.cpp .dylib files for MacCatalyst here -->
 	</ItemGroup>
 
+	<!-- WINDOWS NATIVE LIBRARIES -->
 	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
-		<!-- llama.cpp related DLLs -->
-		<!-- chat.dll -->
+		<!-- Assuming x64 for Windows; add x86 if needed and files exist -->
 		<Content Include="Platforms\Windows\libs\x64\chat.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\chat.dll')">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>chat.dll</Link>
 		</Content>
-		<Content Include="Platforms\Windows\libs\x86\chat.dll" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\chat.dll')">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>chat.dll</Link>
-		</Content>
-
-		<!-- ggml-base.dll -->
-		<Content Include="Platforms\Windows\libs\x64\ggml-base.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\ggml-base.dll')">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>ggml-base.dll</Link>
-		</Content>
-		<Content Include="Platforms\Windows\libs\x86\ggml-base.dll" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\ggml-base.dll')">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>ggml-base.dll</Link>
-		</Content>
-
-		<!-- ggml-cpu.dll -->
-		<Content Include="Platforms\Windows\libs\x64\ggml-cpu.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\ggml-cpu.dll')">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>ggml-cpu.dll</Link>
-		</Content>
-		<Content Include="Platforms\Windows\libs\x86\ggml-cpu.dll" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\ggml-cpu.dll')">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>ggml-cpu.dll</Link>
-		</Content>
-
-		<!-- ggml.dll -->
-		<Content Include="Platforms\Windows\libs\x64\ggml.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\ggml.dll')">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>ggml.dll</Link>
-		</Content>
-		<Content Include="Platforms\Windows\libs\x86\ggml.dll" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\ggml.dll')">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>ggml.dll</Link>
-		</Content>
-
-		<!-- llama.dll -->
 		<Content Include="Platforms\Windows\libs\x64\llama.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\llama.dll')">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 			<Link>llama.dll</Link>
 		</Content>
-		<Content Include="Platforms\Windows\libs\x86\llama.dll" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\llama.dll')">
+		<Content Include="Platforms\Windows\libs\x64\ggml.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\ggml.dll')">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>llama.dll</Link>
+			<Link>ggml.dll</Link>
 		</Content>
-		<!-- Optional .lib files for llama.cpp related DLLs if you have them and want to include them for some reason (not typically needed for P/Invoke) -->
+		<Content Include="Platforms\Windows\libs\x64\ggml-base.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\ggml-base.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>ggml-base.dll</Link>
+		</Content>
+		<Content Include="Platforms\Windows\libs\x64\ggml-cpu.dll" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\ggml-cpu.dll')">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<Link>ggml-cpu.dll</Link>
+		</Content>
+		<!-- Add x86 versions if you have them and need to support x86 Windows -->
 		<!--
-		<Content Include="Platforms\Windows\libs\x64\llama.lib" Condition="$(RuntimeIdentifier.Contains('x64')) AND EXISTS('Platforms\Windows\libs\x64\llama.lib')">
+		<Content Include="Platforms\Windows\libs\x86\chat.dll" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\chat.dll')">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>llama.lib</Link>
+			<Link>chat.dll</Link>
 		</Content>
-		<Content Include="Platforms\Windows\libs\x86\llama.lib" Condition="$(RuntimeIdentifier.Contains('x86')) AND EXISTS('Platforms\Windows\libs\x86\llama.lib')">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-			<Link>llama.lib</Link>
-		</Content>
+		... etc for other x86 DLLs ...
 		-->
 	</ItemGroup>
 
+	<!-- TIZEN NATIVE LIBRARIES (Placeholder) -->
 	<ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">
-		<!-- llama.cpp related (example, replace with actual filename if you have them for Tizen) -->
 		<!--
-		<SharedLibrary Include="Platforms\Tizen\libs\libllama.so" Condition="Exists('Platforms\Tizen\libs\libllama.so')" />
-		<SharedLibrary Include="Platforms\Tizen\libs\libggml.so" Condition="Exists('Platforms\Tizen\libs\libggml.so')" />
+		<SharedLibrary Include="Platforms\Tizen\libs\libchat.so" Condition="Exists('Platforms\Tizen\libs\libchat.so')" />
 		-->
-		<!-- Add other llama.cpp .so files for Tizen here -->
 	</ItemGroup>
 	<!-- ===================================================================== -->
 
 	<ItemGroup>
-	  <MauiXaml Update="Views\ChatLLMPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\ConnectPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\ControlPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\HomePage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
-	  <MauiXaml Update="Views\ScriptPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
+	  <MauiXaml Update="Views\ChatLLMPage.xaml" Generator="MSBuild:Compile" />
+	  <MauiXaml Update="Views\ConnectPage.xaml" Generator="MSBuild:Compile" />
+	  <MauiXaml Update="Views\ControlPage.xaml" Generator="MSBuild:Compile" />
+	  <MauiXaml Update="Views\HomePage.xaml" Generator="MSBuild:Compile" />
+	  <MauiXaml Update="Views\ScriptPage.xaml" Generator="MSBuild:Compile" />
 	</ItemGroup>
 
 </Project>
