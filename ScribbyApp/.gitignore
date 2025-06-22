@@ -1,4 +1,4 @@
-# .NET MAUI .gitignore file
+﻿# .NET MAUI .gitignore file
 # This file is based on the standard Visual Studio and .NET templates.
 
 # --- Visual Studio ---
@@ -59,3 +59,8 @@ desktop.ini
 # Ignore publish output folders, which can be configured in the .csproj
 [Pp]ublish/
 [Pp]ublish[Oo]utput/
+
+# Ignore all .gguf files
+*.gguf
+
+*.so
