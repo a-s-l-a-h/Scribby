@@ -9,7 +9,7 @@ using Microsoft.Maui.Controls;
 using System.Diagnostics;
 using ScribbyApp.Services;
 using NLua;
-using System.Collections.Generic; // Required for List
+using System.Collections.Generic;
 
 #if ANDROID
 using JavaSystem = Java.Lang.JavaSystem;
@@ -18,11 +18,11 @@ using JavaUnsatisfiedLinkError = Java.Lang.UnsatisfiedLinkError;
 
 namespace ScribbyApp.Views
 {
-    // --- KEY CHANGE: A record to represent a single message in the conversation history ---
     public record ChatMessage(string Role, string Content);
 
     public static class NativeLlmMethods
     {
+        // This static class remains unchanged
         internal const string DllName = "chat";
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)] public delegate void TokenCallbackDelegate(IntPtr tokenPtr);
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "registerTokenCallback")] public static extern void RegisterTokenCallback_PInvoke(TokenCallbackDelegate callback);
@@ -48,9 +48,7 @@ namespace ScribbyApp.Views
 
         private readonly BluetoothService _bluetoothService;
         private CancellationTokenSource? _scriptCts;
-        private HorizontalStackLayout? _currentlyRunningButtonContainer;
 
-        // --- KEY CHANGE: The structured conversation history list ---
         private readonly List<ChatMessage> _chatHistory = new();
 
         public ChatLLMPage(BluetoothService bluetoothService)
@@ -61,7 +59,8 @@ namespace ScribbyApp.Views
             SetUiForNoLlm();
         }
 
-        #region Page Lifecycle and UI State Management (Unchanged)
+        #region Page Lifecycle and UI State Management
+        // This region is unchanged
         protected override async void OnAppearing()
         {
             base.OnAppearing();
@@ -77,6 +76,8 @@ namespace ScribbyApp.Views
             SendButton.IsEnabled = false;
             StopGenerationButton.IsEnabled = false;
             DeinitializeButton.IsEnabled = false;
+            AbortScriptButton.IsEnabled = false;
+            SendSButton.IsEnabled = false;
             InitializeButton.IsEnabled = true;
             InitializeButton.IsVisible = true;
         }
@@ -94,6 +95,8 @@ namespace ScribbyApp.Views
             SendButton.IsEnabled = !isBusy;
             StopGenerationButton.IsEnabled = isGenerating;
             DeinitializeButton.IsEnabled = !isBusy;
+            AbortScriptButton.IsEnabled = isScriptRunning;
+            SendSButton.IsEnabled = _bluetoothService.IsConnected && !isBusy;
             foreach (var codeBlockBorder in ChatHistoryLayout.Children.OfType<Border>())
             {
                 if (codeBlockBorder.Content is not Grid mainGrid) continue;
@@ -101,20 +104,14 @@ namespace ScribbyApp.Views
                 if (buttonContainer == null) continue;
                 var copyButton = buttonContainer.Children.OfType<Button>().FirstOrDefault(b => b.Style == (Style)Resources["CodeBlockCopyStyle"]);
                 var runButton = buttonContainer.Children.OfType<Button>().FirstOrDefault(b => b.Style == (Style)Resources["CodeBlockRunStyle"]);
-                var abortButton = buttonContainer.Children.OfType<Button>().FirstOrDefault(b => b.Style == (Style)Resources["CodeBlockAbortStyle"]);
                 if (copyButton != null) copyButton.IsEnabled = !isBusy;
-                if (runButton != null) { runButton.IsEnabled = !isBusy; runButton.IsVisible = !isScriptRunning; }
-                if (abortButton != null)
-                {
-                    bool thisIsTheRunningScript = isScriptRunning && (buttonContainer == _currentlyRunningButtonContainer);
-                    abortButton.IsEnabled = thisIsTheRunningScript;
-                    abortButton.IsVisible = thisIsTheRunningScript;
-                }
+                if (runButton != null) { runButton.IsEnabled = !isBusy; }
             }
         }
         #endregion
 
-        #region Native Library Loading & LLM Initialization / De-initialization (Unchanged)
+        #region Native Library Loading & LLM Initialization / De-initialization
+        // This region is unchanged
         private async Task AttemptNativeLibraryPreloadAsync()
         {
             _nativeLibraryPreloadAttempted = true;
@@ -169,16 +166,17 @@ namespace ScribbyApp.Views
             if (!_isLlmInitialized) return;
             UpdateStatus("De-initializing LLM and clearing state...");
             _generationCts?.Cancel(); _scriptCts?.Cancel(); NativeLlmMethods.StopGeneration_PInvoke(); NativeLlmMethods.FreeLlama_PInvoke();
-            _isLlmInitialized = false; _generationTask = null; _scriptCts = null; _currentlyRunningButtonContainer = null;
-            ChatHistoryLayout.Clear(); _chatHistory.Clear(); // Clear the data history too
+            _isLlmInitialized = false; _generationTask = null; _scriptCts = null;
+            ChatHistoryLayout.Clear(); _chatHistory.Clear();
             SetUiForNoLlm(); UpdateStatus("LLM de-initialized. Ready to load again.");
         }
         #endregion
 
         #region Chat Interaction & UI Generation
+        // --- THIS IS THE KEY FIX ---
         private void SendInitialPrompt()
         {
-            // The prompt is updated to be even more direct about providing full scripts.
+            // The system prompt defines the AI's persona and rules.
             string systemPrompt = @"You are an expert AI coding assistant for 'Scribby', a 4-wheel robot controlled via Bluetooth LE. For each new request from the user, you must generate a complete, standalone Lua script that achieves the user's goal. Do not provide only changes or additions; always provide the full script. The available functions are:
 - send_w() -- Move forward
 - send_s() -- Stop all movement
@@ -190,10 +188,14 @@ namespace ScribbyApp.Views
 - should_abort() -- MUST be called inside loops to allow the user to stop the script.
 All code you generate must be enclosed in triple backticks, like this: ```-- your lua code here```";
 
-            _chatHistory.Add(new ChatMessage("system", systemPrompt)); // Add to history but not UI
+            // 1. Add the rules to the internal history. This is never displayed in the UI.
+            _chatHistory.Add(new ChatMessage("system", systemPrompt));
+
+            // 2. Display a friendly welcome message in the UI. This is NOT added to the AI's history.
             string welcomeMessage = "Hello! I am the Scribby AI assistant. I will provide a complete Lua script for every request you make.";
             AddMessageToUI("AI", welcomeMessage);
-            _chatHistory.Add(new ChatMessage("assistant", welcomeMessage));
+
+            // 3. DO NOT start a generation here. Wait for the user's first input.
         }
 
         private void SendButton_Clicked(object? sender, EventArgs e)
@@ -202,13 +204,14 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
             if (string.IsNullOrEmpty(userInput)) return;
             ChatInputEntry.Text = "";
 
+            // Add the user's message to both the UI and the internal history
             AddMessageToUI("You", userInput);
             _chatHistory.Add(new ChatMessage("user", userInput));
 
+            // Now, generate a response based on the full history
             StartGeneration();
         }
 
-        // --- KEY CHANGE: StartGeneration now builds the prompt from history ---
         private void StartGeneration()
         {
             if (!_isLlmInitialized) return;
@@ -218,7 +221,7 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
             UpdateUiForInteractionState(isGenerating: true, isScriptRunning: false);
             UpdateStatus("Generating response...");
 
-            string fullPrompt = BuildFullPrompt(); // Build the context-aware prompt
+            string fullPrompt = BuildFullPrompt();
 
             _generationCts = new CancellationTokenSource();
             _generationTask = Task.Run(() =>
@@ -238,15 +241,15 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
             }, _generationCts.Token);
         }
 
-        // --- KEY CHANGE: New method to build the prompt ---
         private string BuildFullPrompt()
         {
             var promptBuilder = new StringBuilder();
             foreach (var message in _chatHistory)
             {
-                promptBuilder.AppendLine($"<{message.Role}>{message.Content}</{message.Role}>");
+                // Using a simple format the model can understand
+                promptBuilder.AppendLine($"<{message.Role}>");
+                promptBuilder.AppendLine(message.Content);
             }
-            // Add the final prompt for the AI to start generating from
             promptBuilder.AppendLine("<assistant>");
             return promptBuilder.ToString();
         }
@@ -290,12 +293,13 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
                 ChatHistoryLayout.Children.Remove(_streamingResponseLabel);
             }
             _streamingResponseLabel = null;
-            _chatHistory.Add(new ChatMessage("assistant", fullResponse)); // Add the final response to history
+
+            // Add the final, complete response to the internal history
+            _chatHistory.Add(new ChatMessage("assistant", fullResponse));
 
             ChatHistoryLayout.Children.Add(new Label { Text = "AI:", FontAttributes = FontAttributes.Bold, TextColor = Colors.MediumPurple });
 
             var responseToDisplay = string.IsNullOrWhiteSpace(fullResponse) ? "[No response]" : fullResponse.Trim();
-
             if (!responseToDisplay.Contains("```"))
             {
                 ChatHistoryLayout.Children.Add(new Label { Text = responseToDisplay, LineBreakMode = LineBreakMode.WordWrap });
@@ -317,21 +321,13 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
         {
             var codeEditor = new Editor { Text = code, Style = (Style)Resources["CodeEditorStyle"], MinimumWidthRequest = 450 };
             var codeScrollView = new ScrollView { Orientation = ScrollOrientation.Horizontal, Content = codeEditor };
-
             var copyButton = new Button { CommandParameter = code, Style = (Style)Resources["CodeBlockCopyStyle"] };
             copyButton.Clicked += CopyScriptButton_Clicked;
-
             var runButton = new Button { CommandParameter = code, Style = (Style)Resources["CodeBlockRunStyle"] };
             runButton.Clicked += RunScriptButton_Clicked;
-
-            var abortButton = new Button { IsEnabled = false, IsVisible = false, Style = (Style)Resources["CodeBlockAbortStyle"] };
-            abortButton.Clicked += AbortScriptButton_Clicked;
-
             var buttonContainer = new HorizontalStackLayout { Spacing = 5, HorizontalOptions = LayoutOptions.End, VerticalOptions = LayoutOptions.Start, Padding = new Thickness(0, 5, 5, 0) };
             buttonContainer.Children.Add(copyButton);
             buttonContainer.Children.Add(runButton);
-            buttonContainer.Children.Add(abortButton);
-
             var mainGrid = new Grid();
             mainGrid.Children.Add(codeScrollView); mainGrid.Children.Add(buttonContainer);
             return new Border { Content = mainGrid, Style = (Style)Resources["CodeBlockStyle"] };
@@ -341,21 +337,19 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
         #endregion
 
         #region Lua Scripting & Bluetooth Control
-        private async void CopyScriptButton_Clicked(object? sender, EventArgs e)
+        private void CopyScriptButton_Clicked(object? sender, EventArgs e)
         {
             if (sender is Button { CommandParameter: string scriptToCopy })
             {
                 ChatInputEntry.Text = scriptToCopy;
-                await ChatInputEntry.FocusAsync();
+                ChatInputEntry.Focus();
             }
         }
         private void RunScriptButton_Clicked(object? sender, EventArgs e)
         {
             if (sender is not Button runButton || runButton.CommandParameter is not string scriptToRun) return;
-            if (runButton.Parent is not HorizontalStackLayout buttonContainer) return;
             if (!_bluetoothService.IsConnected || _bluetoothService.PrimaryWriteCharacteristic == null) { DisplayAlert("Error", "Not connected. Please use the 'Connect' tab.", "OK"); return; }
             _scriptCts = new CancellationTokenSource();
-            _currentlyRunningButtonContainer = buttonContainer;
             UpdateUiForInteractionState(isGenerating: false, isScriptRunning: true);
             LuaLog("Running script...");
             Task.Run(() =>
@@ -381,16 +375,26 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
                 catch (Exception ex) { MainThread.BeginInvokeOnMainThread(() => LuaLog($"Script error: {ex.Message}")); }
                 finally
                 {
-                    _scriptCts?.Dispose(); _scriptCts = null; _currentlyRunningButtonContainer = null;
+                    _scriptCts?.Dispose(); _scriptCts = null;
                     MainThread.BeginInvokeOnMainThread(() => UpdateUiForInteractionState(isGenerating: false, isScriptRunning: false));
                 }
             });
         }
-        private async void AbortScriptButton_Clicked(object? sender, EventArgs e)
+
+        private void AbortScriptButton_Clicked(object? sender, EventArgs e)
         {
             LuaLog("Abort requested by user."); _scriptCts?.Cancel();
-            if (_bluetoothService.PrimaryWriteCharacteristic != null) { await _bluetoothService.SendCommandAsync(_bluetoothService.PrimaryWriteCharacteristic, "s"); }
         }
+
+        private async void SendSButton_Clicked(object? sender, EventArgs e)
+        {
+            if (_bluetoothService.PrimaryWriteCharacteristic != null)
+            {
+                LuaLog("Sending manual 'Stop' command...");
+                await _bluetoothService.SendCommandAsync(_bluetoothService.PrimaryWriteCharacteristic, "s");
+            }
+        }
+
         public void ShouldAbortScript() => _scriptCts?.Token.ThrowIfCancellationRequested();
         public void SendWCommandForLua() => SendCommandForLua("w");
         public void SendACommandForLua() => SendCommandForLua("a");

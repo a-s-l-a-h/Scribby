@@ -4,7 +4,6 @@
              x:Class="ScribbyApp.Views.ChatLLMPage"
              Title="Chat LLM">
     <ContentPage.Resources>
-        <!-- Style for the border containing the code block -->
         <Style x:Key="CodeBlockStyle" TargetType="Border">
             <Setter Property="Padding" Value="0"/>
             <Setter Property="BackgroundColor" Value="#2E2E2E"/>
@@ -16,17 +15,15 @@
             </Setter>
         </Style>
 
-        <!-- Style for the read-only Editor used to display code -->
         <Style x:Key="CodeEditorStyle" TargetType="Editor">
-            <Setter Property="FontFamily" Value="monospace"/>
+            <Setter Property="FontFamily" Value="RobotoMono"/>
             <Setter Property="TextColor" Value="White"/>
             <Setter Property="BackgroundColor" Value="Transparent"/>
             <Setter Property="IsReadOnly" Value="True"/>
             <Setter Property="AutoSize" Value="TextChanges"/>
-            <Setter Property="Padding" Value="10"/>
+          
         </Style>
 
-        <!-- NEW: Style for the Copy button inside a code block -->
         <Style x:Key="CodeBlockCopyStyle" TargetType="Button">
             <Setter Property="BackgroundColor" Value="#4A4A4A"/>
             <Setter Property="TextColor" Value="White"/>
@@ -37,7 +34,6 @@
             <Setter Property="HeightRequest" Value="30"/>
         </Style>
 
-        <!-- Style for the Run button inside a code block -->
         <Style x:Key="CodeBlockRunStyle" TargetType="Button">
             <Setter Property="BackgroundColor" Value="MediumPurple"/>
             <Setter Property="TextColor" Value="White"/>
@@ -47,21 +43,11 @@
             <Setter Property="FontSize" Value="10"/>
             <Setter Property="HeightRequest" Value="30"/>
         </Style>
-
-        <!-- Style for the Abort button inside a code block -->
-        <Style x:Key="CodeBlockAbortStyle" TargetType="Button">
-            <Setter Property="BackgroundColor" Value="IndianRed"/>
-            <Setter Property="TextColor" Value="White"/>
-            <Setter Property="Text" Value="Abort Script"/>
-            <Setter Property="Padding" Value="8,4"/>
-            <Setter Property="FontSize" Value="10"/>
-            <Setter Property="HeightRequest" Value="30"/>
-        </Style>
     </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto, Auto, *, Auto, Auto" Padding="10" RowSpacing="10">
         <Label Grid.Row="0" Text="Scribby AI Assistant" FontSize="Title" FontAttributes="Bold" HorizontalOptions="Center" />
-        <Button Grid.Row="1" x:Name="InitializeButton" Text="Load LLM Model Initialize" Clicked="InitializeLlmButton_Clicked" />
+        <Button Grid.Row="1" x:Name="InitializeButton" Text="Load LLM Model  Initialize" Clicked="InitializeLlmButton_Clicked" />
         <ScrollView Grid.Row="2" x:Name="ChatScrollView">
             <VerticalStackLayout x:Name="ChatHistoryLayout" Spacing="10"/>
         </ScrollView>
@@ -69,9 +55,16 @@
             <Entry x:Name="ChatInputEntry" Placeholder="Tell me what you want the robot to do..." Completed="SendButton_Clicked" IsEnabled="False"/>
             <Button x:Name="SendButton" Grid.Column="1" Text="Send" Clicked="SendButton_Clicked" IsEnabled="False"/>
         </Grid>
+
         <VerticalStackLayout Grid.Row="4" Spacing="5" Margin="0,5,0,0">
             <Button x:Name="StopGenerationButton" Text="Stop Generation" Clicked="StopGenerationButton_Clicked" IsEnabled="False" BackgroundColor="OrangeRed"/>
-            <Button x:Name="DeinitializeButton" Text="De-initialize  Clear Chat" Clicked="DeinitializeButton_Clicked" IsEnabled="False" BackgroundColor="LightSlateGray"/>
+
+            <Button x:Name="AbortScriptButton" Text="Abort Running Script" Clicked="AbortScriptButton_Clicked" IsEnabled="False" BackgroundColor="IndianRed"/>
+            <Button x:Name="SendSButton" Text="Send 'S' (Stop) Command" Clicked="SendSButton_Clicked" IsEnabled="False" BackgroundColor="#5A5A5A"/>
+
+            <!-- THIS IS THE FIX for the XAML error -->
+            <Button x:Name="DeinitializeButton" Text="De-initialize  Clear Chat" Clicked="DeinitializeButton_Clicked" IsEnabled="False" BackgroundColor="LightSlateGray" Margin="0,10,0,0"/>
+
             <Label x:Name="StatusLabel" Text="Status: Not initialized." FontSize="Small"/>
         </VerticalStackLayout>
     </Grid>
