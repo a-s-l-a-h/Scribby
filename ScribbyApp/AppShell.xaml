@@ -49,6 +49,13 @@
                 Route="ChatLLMPage" />
         </Tab>
 
+        <Tab Title="Web" Icon="webview.png">
+            <ShellContent
+                Title="Web"
+                ContentTemplate="{DataTemplate views:WebViewPage}"
+                Route="WebViewPage" />
+        </Tab>
+
     </TabBar>
 
 </Shell>

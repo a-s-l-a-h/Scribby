@@ -8,8 +8,9 @@ using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
 using System.Diagnostics;
 using ScribbyApp.Services;
-using NLua;
 using System.Collections.Generic;
+using Jint; // MODIFIED: Using Jint for JavaScript
+using Jint.Runtime; // MODIFIED: For Jint exception handling
 
 #if ANDROID
 using JavaSystem = Java.Lang.JavaSystem;
@@ -38,7 +39,7 @@ namespace ScribbyApp.Views
         private readonly NativeLlmMethods.TokenCallbackDelegate _tokenCallbackInstance;
         private bool _isLlmInitialized = false;
         private string _modelPathInAppDirectory = string.Empty;
-        private const string ModelFileName = "qwen.gguf";
+        private const string ModelFileName = "qwen2.5-coder-3b-instruct-q2_k.gguf";
         private CancellationTokenSource? _generationCts;
         private Task? _generationTask;
         private readonly StringBuilder _currentAiResponseBuilder = new StringBuilder();
@@ -155,7 +156,7 @@ namespace ScribbyApp.Views
             {
                 try
                 {
-                    int nThreads = Math.Max(1, Environment.ProcessorCount / 2); bool success = NativeLlmMethods.InitializeLlama_PInvoke(_modelPathInAppDirectory, 2048, 0, 0.7f, 0.1f, nThreads, nThreads);
+                    int nThreads = Math.Max(1, Environment.ProcessorCount / 2); bool success = NativeLlmMethods.InitializeLlama_PInvoke(_modelPathInAppDirectory, 6000, 0, 0.7f, 0.1f, nThreads, nThreads);
                     if (success) { _isLlmInitialized = true; MainThread.BeginInvokeOnMainThread(() => { SetUiForLlmInitialized(); SendInitialPrompt(); }); } else { MainThread.BeginInvokeOnMainThread(() => { UpdateStatus("initializeLlama returned 'false'."); SetUiForNoLlm(); }); }
                 }
                 catch (Exception ex) { MainThread.BeginInvokeOnMainThread(() => { UpdateStatus($"P/Invoke Exception: {ex.Message}"); SetUiForNoLlm(); }); }
@@ -173,29 +174,24 @@ namespace ScribbyApp.Views
         #endregion
 
         #region Chat Interaction & UI Generation
-        // --- THIS IS THE KEY FIX ---
+
         private void SendInitialPrompt()
         {
-            // The system prompt defines the AI's persona and rules.
-            string systemPrompt = @"You are an expert AI coding assistant for 'Scribby', a 4-wheel robot controlled via Bluetooth LE. For each new request from the user, you must generate a complete, standalone Lua script that achieves the user's goal. Do not provide only changes or additions; always provide the full script. The available functions are:
-- send_w() -- Move forward
-- send_s() -- Stop all movement
-- send_a() -- Turn left
-- send_d() -- Turn right
-- send_x() -- Move backward
-- sleep_ms(milliseconds) -- Pause the script for a duration
-- log_info('message') -- Print a message to the app's status log
-- should_abort() -- MUST be called inside loops to allow the user to stop the script.
-All code you generate must be enclosed in triple backticks, like this: ```-- your lua code here```";
+            // MODIFIED: The system prompt now describes the JavaScript API.
+            string systemPrompt = @"You are an expert AI coding assistant for 'Scribby', a 4-wheel robot controlled via Bluetooth LE. For each new request from the user, you must generate a complete, standalone JavaScript script. Do not provide only changes or additions; always provide the full script. The available functions are:
 
-            // 1. Add the rules to the internal history. This is never displayed in the UI.
+sendToScribby('command') -- Sends a command string. Valid commands: 'w' (forward), 's' (stop), 'a' (left), 'd' (right), 'x' (backward).
+
+scribbySleep(milliseconds) -- Pauses the script for a duration. This function also handles script abortion. and no additional features like distance etc... in scribby now.. ok . if user ask make reactangle etc... go with time based approach . like send w then sleep a second then right like that
+All code you generate must be enclosed in triple backticks for JavaScript, like this:  
+```javascript
+// your js code here
+```  now just hi send ... ok in future user ask help help perfectely .. make short always your answer";
+
             _chatHistory.Add(new ChatMessage("system", systemPrompt));
 
-            // 2. Display a friendly welcome message in the UI. This is NOT added to the AI's history.
-            string welcomeMessage = "Hello! I am the Scribby AI assistant. I will provide a complete Lua script for every request you make.";
+            string welcomeMessage = "Hello! I am the Scribby AI assistant. based on qwen2.5 0.5b  I will provide a complete JavaScript script for every request you make.";
             AddMessageToUI("AI", welcomeMessage);
-
-            // 3. DO NOT start a generation here. Wait for the user's first input.
         }
 
         private void SendButton_Clicked(object? sender, EventArgs e)
@@ -203,26 +199,19 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
             string? userInput = ChatInputEntry.Text?.Trim();
             if (string.IsNullOrEmpty(userInput)) return;
             ChatInputEntry.Text = "";
-
-            // Add the user's message to both the UI and the internal history
             AddMessageToUI("You", userInput);
             _chatHistory.Add(new ChatMessage("user", userInput));
-
-            // Now, generate a response based on the full history
             StartGeneration();
         }
 
         private void StartGeneration()
         {
             if (!_isLlmInitialized) return;
-
             _currentAiResponseBuilder.Clear();
             AddMessageToUI("AI", "...", isStreamingPlaceholder: true);
             UpdateUiForInteractionState(isGenerating: true, isScriptRunning: false);
             UpdateStatus("Generating response...");
-
             string fullPrompt = BuildFullPrompt();
-
             _generationCts = new CancellationTokenSource();
             _generationTask = Task.Run(() =>
             {
@@ -246,7 +235,6 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
             var promptBuilder = new StringBuilder();
             foreach (var message in _chatHistory)
             {
-                // Using a simple format the model can understand
                 promptBuilder.AppendLine($"<{message.Role}>");
                 promptBuilder.AppendLine(message.Content);
             }
@@ -293,12 +281,8 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
                 ChatHistoryLayout.Children.Remove(_streamingResponseLabel);
             }
             _streamingResponseLabel = null;
-
-            // Add the final, complete response to the internal history
             _chatHistory.Add(new ChatMessage("assistant", fullResponse));
-
             ChatHistoryLayout.Children.Add(new Label { Text = "AI:", FontAttributes = FontAttributes.Bold, TextColor = Colors.MediumPurple });
-
             var responseToDisplay = string.IsNullOrWhiteSpace(fullResponse) ? "[No response]" : fullResponse.Trim();
             if (!responseToDisplay.Contains("```"))
             {
@@ -311,7 +295,18 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
                 {
                     var content = parts[i].Trim(); if (string.IsNullOrEmpty(content)) continue;
                     bool isCode = i % 2 != 0;
-                    if (isCode) { string cleanCode = content.StartsWith("lua", StringComparison.OrdinalIgnoreCase) ? content.Substring(3).TrimStart() : content; ChatHistoryLayout.Children.Add(CreateInteractiveCodeBlock(cleanCode)); }
+                    if (isCode)
+                    {
+                        // MODIFIED: Clean "javascript" or "lua" from the code block
+                        string cleanCode = content.StartsWith("javascript", StringComparison.OrdinalIgnoreCase)
+                            ? content.Substring("javascript".Length).TrimStart()
+                            : content;
+                        if (cleanCode.StartsWith("lua", StringComparison.OrdinalIgnoreCase))
+                        {
+                            cleanCode = cleanCode.Substring("lua".Length).TrimStart();
+                        }
+                        ChatHistoryLayout.Children.Add(CreateInteractiveCodeBlock(cleanCode));
+                    }
                     else { ChatHistoryLayout.Children.Add(new Label { Text = content, LineBreakMode = LineBreakMode.WordWrap }); }
                 }
             }
@@ -336,7 +331,7 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
         private async void ScrollToBottom() { await Task.Delay(50); await ChatScrollView.ScrollToAsync(ChatHistoryLayout, ScrollToPosition.End, true); }
         #endregion
 
-        #region Lua Scripting & Bluetooth Control
+        #region Jint Scripting & Bluetooth Control
         private void CopyScriptButton_Clicked(object? sender, EventArgs e)
         {
             if (sender is Button { CommandParameter: string scriptToCopy })
@@ -345,37 +340,50 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
                 ChatInputEntry.Focus();
             }
         }
+
+        // MODIFIED: This entire method now uses the Jint engine.
         private void RunScriptButton_Clicked(object? sender, EventArgs e)
         {
             if (sender is not Button runButton || runButton.CommandParameter is not string scriptToRun) return;
             if (!_bluetoothService.IsConnected || _bluetoothService.PrimaryWriteCharacteristic == null) { DisplayAlert("Error", "Not connected. Please use the 'Connect' tab.", "OK"); return; }
+
             _scriptCts = new CancellationTokenSource();
             UpdateUiForInteractionState(isGenerating: false, isScriptRunning: true);
-            LuaLog("Running script...");
+            UpdateStatus("Running JS script...");
+
             Task.Run(() =>
             {
                 try
                 {
-                    using (Lua lua = new Lua())
+                    var engine = new Engine(options =>
                     {
-                        lua.State.Encoding = Encoding.UTF8;
-                        lua.RegisterFunction("send_w", this, GetType().GetMethod(nameof(SendWCommandForLua)));
-                        lua.RegisterFunction("send_a", this, GetType().GetMethod(nameof(SendACommandForLua)));
-                        lua.RegisterFunction("send_s", this, GetType().GetMethod(nameof(SendSCommandForLua)));
-                        lua.RegisterFunction("send_d", this, GetType().GetMethod(nameof(SendDCommandForLua)));
-                        lua.RegisterFunction("send_x", this, GetType().GetMethod(nameof(SendXCommandForLua)));
-                        lua.RegisterFunction("sleep_ms", this, GetType().GetMethod(nameof(SleepForLua)));
-                        lua.RegisterFunction("log_info", this, GetType().GetMethod(nameof(LuaLog)));
-                        lua.RegisterFunction("should_abort", this, GetType().GetMethod(nameof(ShouldAbortScript)));
-                        lua.DoString(scriptToRun);
-                    }
-                    MainThread.BeginInvokeOnMainThread(() => LuaLog("Script finished."));
+                        options.CancellationToken(_scriptCts.Token);
+                        options.TimeoutInterval(TimeSpan.FromMinutes(2)); // 2-minute timeout
+                    });
+
+                    engine.SetValue("sendToScribby", new Action<string>(SendToScribby));
+                    engine.SetValue("scribbySleep", new Action<int>(ScribbySleep));
+
+                    engine.Execute(scriptToRun);
+
+                    MainThread.BeginInvokeOnMainThread(() => UpdateStatus("Script finished successfully."));
                 }
-                catch (OperationCanceledException) { MainThread.BeginInvokeOnMainThread(() => LuaLog("Script aborted by user.")); }
-                catch (Exception ex) { MainThread.BeginInvokeOnMainThread(() => LuaLog($"Script error: {ex.Message}")); }
+                catch (OperationCanceledException)
+                {
+                    MainThread.BeginInvokeOnMainThread(() => UpdateStatus("Script aborted by user."));
+                }
+                catch (JavaScriptException jsEx)
+                {
+                    MainThread.BeginInvokeOnMainThread(() => UpdateStatus($"Script error: {jsEx.Message}"));
+                }
+                catch (Exception ex)
+                {
+                    MainThread.BeginInvokeOnMainThread(() => UpdateStatus($"Script error: {ex.Message}"));
+                }
                 finally
                 {
-                    _scriptCts?.Dispose(); _scriptCts = null;
+                    _scriptCts?.Dispose();
+                    _scriptCts = null;
                     MainThread.BeginInvokeOnMainThread(() => UpdateUiForInteractionState(isGenerating: false, isScriptRunning: false));
                 }
             });
@@ -383,34 +391,36 @@ All code you generate must be enclosed in triple backticks, like this: ```-- you
 
         private void AbortScriptButton_Clicked(object? sender, EventArgs e)
         {
-            LuaLog("Abort requested by user."); _scriptCts?.Cancel();
+            UpdateStatus("Abort requested by user.");
+            _scriptCts?.Cancel();
         }
 
         private async void SendSButton_Clicked(object? sender, EventArgs e)
         {
             if (_bluetoothService.PrimaryWriteCharacteristic != null)
             {
-                LuaLog("Sending manual 'Stop' command...");
+                UpdateStatus("Sending manual 'Stop' command...");
                 await _bluetoothService.SendCommandAsync(_bluetoothService.PrimaryWriteCharacteristic, "s");
             }
         }
 
-        public void ShouldAbortScript() => _scriptCts?.Token.ThrowIfCancellationRequested();
-        public void SendWCommandForLua() => SendCommandForLua("w");
-        public void SendACommandForLua() => SendCommandForLua("a");
-        public void SendSCommandForLua() => SendCommandForLua("s");
-        public void SendDCommandForLua() => SendCommandForLua("d");
-        public void SendXCommandForLua() => SendCommandForLua("x");
-        private void SendCommandForLua(string command)
+        // NEW: C# function exposed to Jint as 'sendToScribby'
+        public void SendToScribby(string command)
         {
             if (_bluetoothService.PrimaryWriteCharacteristic == null) return;
+            // Run async method synchronously on background thread
             _bluetoothService.SendCommandAsync(_bluetoothService.PrimaryWriteCharacteristic, command).GetAwaiter().GetResult();
         }
-        public void SleepForLua(int milliseconds)
+
+        // NEW: C# function exposed to Jint as 'scribbySleep'. It also handles cancellation.
+        public void ScribbySleep(int milliseconds)
         {
-            if (_scriptCts?.Token.WaitHandle.WaitOne(milliseconds) ?? false) _scriptCts?.Token.ThrowIfCancellationRequested();
+            // This is a cancellable wait. It returns true if the token is cancelled.
+            if (_scriptCts?.Token.WaitHandle.WaitOne(milliseconds) ?? false)
+            {
+                _scriptCts?.Token.ThrowIfCancellationRequested();
+            }
         }
-        public void LuaLog(string message) => UpdateStatus(message);
         #endregion
 
         private void UpdateStatus(string message) { MainThread.BeginInvokeOnMainThread(() => StatusLabel.Text = $"Status: {message}"); }

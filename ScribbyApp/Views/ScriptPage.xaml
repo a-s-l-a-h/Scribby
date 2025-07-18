@@ -9,7 +9,7 @@
         <!-- Row 0: Title -->
         <Label
             Grid.Row="0"
-            Text="Lua Script Editor"
+            Text="JavaScript Editor"
             FontSize="Title"
             FontAttributes="Bold"
             HorizontalOptions="Center" />
@@ -30,7 +30,7 @@
                 <ScrollView Grid.Column="1" Orientation="Both">
                     <Editor
                         x:Name="CodeEditor"
-                        Placeholder="-- Write your Lua script here"
+                        Placeholder="// Write your JavaScript here"
                         FontFamily="monospace"
                         AutoSize="TextChanges"
                         TextChanged="OnCodeEditorTextChanged"
@@ -48,9 +48,9 @@
             <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                 <Button
                     Grid.Column="0"
-                    x:Name="RunLuaScriptButton"
+                    x:Name="RunScriptButton"
                     Text="Run Script"
-                    Clicked="OnRunLuaScriptClicked"
+                    Clicked="OnRunScriptClicked"
                     BackgroundColor="MediumPurple"
                     TextColor="White"/>
 

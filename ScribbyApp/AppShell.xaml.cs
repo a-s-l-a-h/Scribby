@@ -13,6 +13,7 @@ namespace ScribbyApp
             Routing.RegisterRoute(nameof(ConnectPage), typeof(ConnectPage));
             Routing.RegisterRoute(nameof(ControlPage), typeof(ControlPage)); // <-- ADD THIS
             Routing.RegisterRoute(nameof(ScriptPage), typeof(ScriptPage));   // <-- ADD THIS
+            Routing.RegisterRoute(nameof(WebViewPage), typeof(WebViewPage));
         }
     }
 }

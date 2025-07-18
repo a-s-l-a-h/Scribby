@@ -1,7 +1,8 @@
 using ScribbyApp.Services;
-using NLua;
 using System.Diagnostics;
 using System.Text;
+using Jint;
+using Jint.Runtime;
 
 namespace ScribbyApp.Views;
 
@@ -29,7 +30,7 @@ public partial class ScriptPage : ContentPage
         bool isReadyToRun = _bluetoothService.IsConnected && _bluetoothService.PrimaryWriteCharacteristic != null;
 
         // The Run button is enabled if we are ready and a script is NOT currently running.
-        RunLuaScriptButton.IsEnabled = isReadyToRun && (_scriptCts == null);
+        RunScriptButton.IsEnabled = isReadyToRun && (_scriptCts == null);
         CodeEditor.IsEnabled = isReadyToRun && (_scriptCts == null);
 
         // The Abort button is only enabled if a script IS currently running.
@@ -38,32 +39,30 @@ public partial class ScriptPage : ContentPage
 
     private void LoadDefaultScript()
     {
-        // Added a call to should_abort() inside the loop to make it cancellable
+        // MODIFIED: Default script is now cleaner and only uses the two allowed functions.
+        // The scribbySleep() function now implicitly handles script abortion.
         string defaultScript = @"
-log_info('Lua: Script starting...')
-for i = 1, 10 do
-    -- This call allows the script to be aborted from C#
-    should_abort()
+// This script moves the robot forward for 1 second, then stops.
+// It repeats this cycle 5 times.
+// The script can be aborted at any time by pressing the 'Abort' button.
 
-    log_info('Lua: Loop ' .. i .. '/10: Sending W')
-    send_w()
-    sleep_ms(1000)
+for (let i = 1; i <= 5; i++) {
+    // Move forward
+    sendToScribby('w');
+    scribbySleep(1000); // Wait 1 second (and check for abort)
 
-    -- It's good practice to check for abort after long waits too
-    should_abort()
-    
-    log_info('Lua: Loop ' .. i .. '/10: Sending S')
-    send_s()
-    sleep_ms(500)
-end
-log_info('Lua: Script finished successfully.')
+    // Stop
+    sendToScribby('s');
+    scribbySleep(500); // Wait 0.5 seconds (and check for abort)
+}
+
+// The script finishes automatically after the loop.
 ".Trim();
 
         CodeEditor.Text = defaultScript;
         UpdateLineNumbers();
     }
 
-    // This method handles updating the line number display
     private void UpdateLineNumbers()
     {
         var lineCount = CodeEditor.Text.Split('\n').Length;
@@ -75,20 +74,15 @@ log_info('Lua: Script finished successfully.')
         LineNumberEditor.Text = sb.ToString();
     }
 
-    // Event handler for the editor's text changing
     private void OnCodeEditorTextChanged(object? sender, TextChangedEventArgs e)
     {
         UpdateLineNumbers();
     }
 
-    // Click handler for the new Abort button
     private async void OnAbortScriptClicked(object sender, EventArgs e)
     {
-        LuaLog("Abort requested by user.");
-
-        // Signal cancellation to the background task
+        LogStatus("Abort requested by user.");
         _scriptCts?.Cancel();
-
         // Immediately send the 's' (stop) command to the device
         if (_bluetoothService.PrimaryWriteCharacteristic != null)
         {
@@ -96,7 +90,7 @@ log_info('Lua: Script finished successfully.')
         }
     }
 
-    private void OnRunLuaScriptClicked(object sender, EventArgs e)
+    private void OnRunScriptClicked(object sender, EventArgs e)
     {
         if (_bluetoothService.PrimaryWriteCharacteristic == null)
         {
@@ -104,115 +98,104 @@ log_info('Lua: Script finished successfully.')
             return;
         }
 
-        // Create a new cancellation source for this specific run
         _scriptCts = new CancellationTokenSource();
-
         UpdateControlsState(); // Update UI: Disable Run, Enable Abort
-        LuaLog("Lua script starting...");
+        LogStatus("JS script starting...");
         string scriptToRun = CodeEditor.Text;
 
         Task.Run(() =>
         {
             try
             {
-                using (Lua lua = new Lua())
+                var engine = new Engine(options =>
                 {
-                    lua.State.Encoding = Encoding.UTF8;
-                    // Register all functions, including our new abort checker
-                    lua.RegisterFunction("send_w", this, GetType().GetMethod(nameof(SendWCommandForLua)));
-                    lua.RegisterFunction("send_s", this, GetType().GetMethod(nameof(SendSCommandForLua)));
-                    lua.RegisterFunction("sleep_ms", this, GetType().GetMethod(nameof(SleepForLua)));
-                    lua.RegisterFunction("log_info", this, GetType().GetMethod(nameof(LuaLog)));
-                    lua.RegisterFunction("should_abort", this, GetType().GetMethod(nameof(ShouldAbortScript)));
+                    // Enforce cancellation token
+                    options.CancellationToken(_scriptCts.Token);
+                    // Limit execution time to prevent infinite loops (optional but good practice)
+                    options.TimeoutInterval(TimeSpan.FromMinutes(1));
+                });
 
-                    lua.DoString(scriptToRun);
-                }
+                // MODIFIED: Only expose the two required functions to the JS environment.
+                engine.SetValue("sendToScribby", new Action<string>(SendToScribby));
+                engine.SetValue("scribbySleep", new Action<int>(ScribbySleep));
 
-                // This part only runs if the script completes without error or cancellation
-                MainThread.BeginInvokeOnMainThread(async () =>
+                // Execute the script
+                engine.Execute(scriptToRun);
+
+                MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    LuaLog("Lua script finished.");
-                    await DisplayAlert("Lua Script", "Script finished successfully.", "OK");
+                    LogStatus("JS script finished successfully.");
                 });
             }
             catch (OperationCanceledException)
             {
-                // This is the expected exception when the script is aborted. Handle it gracefully.
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    LuaLog("Script execution was successfully aborted.");
+                    LogStatus("Script execution was successfully aborted.");
                 });
             }
-            catch (NLua.Exceptions.LuaScriptException luaEx)
+            catch (JavaScriptException jsEx)
             {
-                var errorMsg = $"Lua script error: {luaEx.Message}";
-                Debug.WriteLine($"NLua Script Error: {luaEx.ToString()}");
-                MainThread.BeginInvokeOnMainThread(async () =>
+                var errorMsg = $"JS script error: {jsEx.Message}";
+                Debug.WriteLine($"Jint Script Error: {jsEx.ToString()}");
+                MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    LuaLog(errorMsg);
-                    await DisplayAlert("Lua Error", errorMsg, "OK");
+                    LogStatus(errorMsg);
+                    DisplayAlert("JavaScript Error", errorMsg, "OK");
                 });
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Error running Lua script: {ex.ToString()}");
+                Debug.WriteLine($"Error running JS script: {ex.ToString()}");
                 var errorMsg = $"System error running script: {ex.Message}";
-                MainThread.BeginInvokeOnMainThread(async () =>
+                MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    LuaLog(errorMsg);
-                    await DisplayAlert("Error", errorMsg, "OK");
+                    LogStatus(errorMsg);
+                    DisplayAlert("Error", errorMsg, "OK");
                 });
             }
             finally
             {
-                // This block runs whether the script succeeded, failed, or was aborted.
-                // It's the perfect place to clean up and reset the UI.
                 _scriptCts?.Dispose();
-                _scriptCts = null; // Setting to null indicates no script is running
+                _scriptCts = null;
                 MainThread.BeginInvokeOnMainThread(UpdateControlsState);
             }
         });
     }
 
-    #region NLua Functions
+    #region C# Functions for Jint
 
-    // This function is called from Lua to check for cancellation.
-    // It will throw an exception if the Abort button was clicked.
-    public void ShouldAbortScript()
+    // Exposed to JS as sendToScribby('...')
+    public void SendToScribby(string command)
     {
-        _scriptCts?.Token.ThrowIfCancellationRequested();
-    }
+        if (string.IsNullOrWhiteSpace(command)) return;
 
-    public void SendWCommandForLua()
-    {
         if (_bluetoothService.PrimaryWriteCharacteristic == null)
         {
-            LuaLog("Lua: Primary write characteristic not ready for W.");
+            LogStatus("Error: Bluetooth characteristic not ready.");
             return;
         }
-        _bluetoothService.SendCommandAsync(_bluetoothService.PrimaryWriteCharacteristic, "w").GetAwaiter().GetResult();
+        // Use GetAwaiter().GetResult() to run the async method synchronously
+        // from the non-async script context. This is safe because it's on a background thread.
+        _bluetoothService.SendCommandAsync(_bluetoothService.PrimaryWriteCharacteristic, command.Trim()).GetAwaiter().GetResult();
     }
 
-    public void SendSCommandForLua()
+    // Exposed to JS as scribbySleep(...)
+    // MODIFIED: This function now ALSO handles checking for abort requests.
+    public void ScribbySleep(int milliseconds)
     {
-        if (_bluetoothService.PrimaryWriteCharacteristic == null)
+        // Instead of a blocking sleep, we do a cancellable wait.
+        // If the token is cancelled, WaitOne returns true and we throw.
+        if (_scriptCts?.Token.WaitHandle.WaitOne(milliseconds) ?? false)
         {
-            LuaLog("Lua: Primary write characteristic not ready for S.");
-            return;
+            _scriptCts?.Token.ThrowIfCancellationRequested();
         }
-        _bluetoothService.SendCommandAsync(_bluetoothService.PrimaryWriteCharacteristic, "s").GetAwaiter().GetResult();
     }
 
-    public void SleepForLua(int milliseconds)
+    // This is now a private helper for C# to update the UI, not exposed to JS.
+    private void LogStatus(string message)
     {
-        // Instead of a blocking sleep, we do a cancellable wait
-        _scriptCts?.Token.WaitHandle.WaitOne(milliseconds);
-        _scriptCts?.Token.ThrowIfCancellationRequested();
-    }
-
-    public void LuaLog(string message)
-    {
-        Debug.WriteLine($"LUA: {message}");
+        Debug.WriteLine($"ScriptPage: {message}");
         MainThread.BeginInvokeOnMainThread(() => {
             StatusLabel.Text = message;
         });

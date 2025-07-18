@@ -33,6 +33,7 @@ public static class MauiProgram
         // Transient for pages we navigate to, creating a new instance each time
         builder.Services.AddTransient<ControlPage>();
         builder.Services.AddTransient<ScriptPage>();
+        builder.Services.AddTransient<WebViewPage>();
 
         return builder.Build();
     }

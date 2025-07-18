@@ -42,7 +42,9 @@
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
     <!-- THIS IS WHERE IT BELONGS -->
-    <DeviceCapability Name="bluetooth" /> 
+    <DeviceCapability Name="bluetooth" />
+	<DeviceCapability Name="webcam" />
+	<DeviceCapability Name="microphone" />
   </Capabilities>
 
 </Package>
