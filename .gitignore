@@ -55,6 +55,12 @@ desktop.ini
 # VS Code
 .vscode/
 
+# Ignore all .gguf files
+*.gguf
+
+*.so
+*.dll
+
 # --- Publish Folders ---
 # Ignore publish output folders, which can be configured in the .csproj
 [Pp]ublish/

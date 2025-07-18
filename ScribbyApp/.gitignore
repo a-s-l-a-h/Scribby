@@ -64,3 +64,4 @@ desktop.ini
 *.gguf
 
 *.so
+*.dll
