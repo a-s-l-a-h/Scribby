@@ -17,6 +17,9 @@ backup/
 [Bb]in/
 [Oo]bj/
 
+**/*.so
+**/*.dll
+
 # --- Other Generated Files & Caches ---
 # Log files
 *.log
