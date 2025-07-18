@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:ScribbyApp.Models"
+             x:Class="ScribbyApp.Views.CodeListPage"
+             Title="My Scripts">
+    <Grid RowDefinitions="*, Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout>
+                <Label Text="No scripts saved. Click 'Add' to create one!"
+                       x:Name="EmptyLabel" IsVisible="False" HorizontalOptions="Center" Margin="20"/>
+
+                <CollectionView x:Name="ScriptsCollectionView" SelectionMode="None">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="models:UserScript">
+                            <Frame Padding="10" Margin="10,5" CornerRadius="8" BorderColor="LightGray" HasShadow="True">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" VerticalOptions="Center">
+                                    <Image Grid.Column="0" Source="{Binding Icon}" WidthRequest="40" HeightRequest="40" Aspect="AspectFit" />
+                                    <Label Grid.Column="1" Text="{Binding Name}" FontSize="Medium" VerticalOptions="Center"/>
+                                    <Button Grid.Column="2" Text="Run" Clicked="OnRunClicked" CommandParameter="{Binding .}" BackgroundColor="MediumPurple"/>
+                                    <Button Grid.Column="3" Text="Edit" Clicked="OnEditClicked" CommandParameter="{Binding .}" />
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Button Grid.Row="1"
+                Text="Add New Script"
+                Clicked="OnAddClicked"
+                Margin="10"
+                HorizontalOptions="Fill"/>
+    </Grid>
+</ContentPage>

@@ -44,6 +44,7 @@
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
 		<PackageReference Include="NLua" Version="1.7.5" />
 		<PackageReference Include="Plugin.BLE" Version="3.1.0" />
+		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
 	</ItemGroup>
 
 	<!-- ===================================================================== -->
@@ -208,14 +209,22 @@
 	<!-- ===================================================================== -->
 
 	<ItemGroup>
-	  <MauiXaml Update="Views\ChatLLMPage.xaml" Generator="MSBuild:Compile" />
+	  <MauiXaml Update="Views\CodeEditorPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\CodeListPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\CodePreviewPage.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
 	  <MauiXaml Update="Views\ConnectPage.xaml" Generator="MSBuild:Compile" />
 	  <MauiXaml Update="Views\ControlPage.xaml" Generator="MSBuild:Compile" />
 	  <MauiXaml Update="Views\HomePage.xaml" Generator="MSBuild:Compile" />
-	  <MauiXaml Update="Views\ScriptPage.xaml" Generator="MSBuild:Compile" />
-	  <MauiXaml Update="Views\WebViewPage.xaml">
-	    <Generator>MSBuild:Compile</Generator>
-	  </MauiXaml>
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Data\" />
 	</ItemGroup>
 
 	<!-- Add this property group for AOT compilation 

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScribbyApp.Views.CodeEditorPage"
+             Title="Script Editor">
+    <Grid RowDefinitions="Auto, *, Auto" RowSpacing="10" Padding="10">
+
+        <!-- Row 0: Script Name -->
+        <VerticalStackLayout Grid.Row="0">
+            <Label Text="Script Name"/>
+            <Entry x:Name="NameEntry" Placeholder="e.g., My Awesome Script" />
+        </VerticalStackLayout>
+
+        <!-- Row 1: The Code Editor with Line Numbers -->
+        <Border Grid.Row="1" Stroke="LightGray" StrokeThickness="1">
+            <Grid ColumnDefinitions="Auto, *">
+                <Editor Grid.Column="0"
+                        x:Name="LineNumberEditor"
+                        IsReadOnly="True"
+                        WidthRequest="40"
+                        FontFamily="monospace"
+                        BackgroundColor="#f0f0f0"
+                        TextColor="Gray"
+                        VerticalTextAlignment="Start"/>
+
+                <ScrollView Grid.Column="1" Orientation="Both">
+                    <Editor x:Name="CodeEditor"
+                            Placeholder="// Your HTML and JavaScript code here"
+                            FontFamily="monospace"
+                            AutoSize="TextChanges"
+                            TextChanged="OnCodeEditorTextChanged"
+                            VerticalOptions="FillAndExpand"
+                            HorizontalOptions="FillAndExpand" />
+                </ScrollView>
+            </Grid>
+        </Border>
+
+        <!-- Row 2: Action Buttons -->
+        <VerticalStackLayout Grid.Row="2" Spacing="5">
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                <Button Grid.Column="0" Text="Save" Clicked="OnSaveClicked" BackgroundColor="Green"/>
+                <Button Grid.Column="1" Text="Preview" Clicked="OnPreviewClicked" BackgroundColor="CornflowerBlue"/>
+            </Grid>
+            <Button x:Name="DeleteButton" Text="Delete Script" Clicked="OnDeleteClicked" IsVisible="False" BackgroundColor="Red"/>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
