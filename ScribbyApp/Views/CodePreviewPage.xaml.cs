@@ -6,6 +6,7 @@ using System.IO;
 
 #if ANDROID
 using Android.Webkit;
+using AWebView = Android.Webkit.WebView;
 #elif IOS
 using WebKit;
 using Foundation;
@@ -32,9 +33,14 @@ namespace ScribbyApp.Views
 
         private async void PrepareAndLoadWebPackage(string htmlContentFromDb)
         {
+            // The name of our web content folder inside Resources/Raw.
+            // This MUST match the folder name in your project structure.
             const string sourceAssetFolder = "www";
+
+            // A temporary directory in the app's local data storage to build our web package.
             string targetDir = Path.Combine(FileSystem.AppDataDirectory, "temp_web_package");
 
+            // Clean up any previous run to ensure fresh files.
             if (Directory.Exists(targetDir))
             {
                 Directory.Delete(targetDir, true);
@@ -43,8 +49,14 @@ namespace ScribbyApp.Views
 
             try
             {
+                // Step 1: Copy supporting files (dist, assets) from the bundled assets.
                 await CopyAssetFolder(sourceAssetFolder, targetDir);
+
+                // Step 2: Write the dynamic HTML from the database into the package.
+                // This makes the relative paths like "./dist/script.js" work.
                 await File.WriteAllTextAsync(Path.Combine(targetDir, "index.html"), htmlContentFromDb);
+
+                // Step 3: Configure the WebView for the specific platform and load our new content.
                 ConfigureNativeWebView(targetDir);
             }
             catch (Exception ex)
@@ -54,8 +66,12 @@ namespace ScribbyApp.Views
             }
         }
 
+        /// <summary>
+        /// Copies bundled assets from Resources/Raw/{sourceFolder} to a physical directory at runtime.
+        /// </summary>
         private async Task CopyAssetFolder(string sourceFolder, string targetFolder)
         {
+            // List all files needed by your HTML, relative to the sourceFolder.
             var assetFiles = new[]
             {
                 // A-Frame and MindAR core libraries
@@ -128,159 +144,86 @@ namespace ScribbyApp.Views
                 // 3D model files and textures
                 "assets/card-example/softmind/scene.gltf",
                 "assets/card-example/softmind/scene.bin",
-                "assets/card-example/softmind/textures/Material_baseColor.png",
-                "assets/card-example/softmind/textures/Material_metallicRoughness.png",
-                "assets/card-example/softmind/textures/Material_normal.png",
-                "assets/card-example/softmind/textures/Material_emissive.png"
+                "assets/card-example/softmind/textures/material_baseColor.png",
+                "assets/card-example/softmind/textures/material_metallicRoughness.png",
+                "assets/card-example/softmind/textures/material_normal.png",
+                "assets/card-example/softmind/textures/material_emissive.png"
             };
 
             foreach (var relativePath in assetFiles)
             {
+                // The logical path for OpenAppPackageFileAsync is relative to the project's root Raw folder.
                 var logicalAssetPath = Path.Combine(sourceFolder, relativePath).Replace('\\', '/');
                 var destinationFile = Path.Combine(targetFolder, relativePath);
 
-                Directory.CreateDirectory(Path.GetDirectoryName(destinationFile));
+                // Ensure the target subdirectory (e.g., 'dist', 'assets/card-example') exists.
+                var directoryName = Path.GetDirectoryName(destinationFile);
+                if (directoryName != null)
+                {
+                    Directory.CreateDirectory(directoryName);
+                }
 
                 Debug.WriteLine($"Attempting to copy MAUI asset: '{logicalAssetPath}'...");
-                try
-                {
-                    using var stream = await FileSystem.OpenAppPackageFileAsync(logicalAssetPath);
-                    using var fileStream = File.Create(destinationFile);
-                    await stream.CopyToAsync(fileStream);
-                    Debug.WriteLine($"Successfully copied to: '{destinationFile}'");
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Failed to copy {logicalAssetPath}: {ex.Message}");
-                }
+                using var stream = await FileSystem.OpenAppPackageFileAsync(logicalAssetPath);
+                using var fileStream = File.Create(destinationFile);
+                await stream.CopyToAsync(fileStream);
+                Debug.WriteLine($"Successfully copied to: '{destinationFile}'");
             }
         }
 
         /// <summary>
-        /// ? FIXED: Enhanced WebView configuration for Windows with better JavaScript support
+        /// Configures the native WebView control on each platform to load the content correctly.
         /// </summary>
         private async void ConfigureNativeWebView(string contentRoot)
         {
-            await PreviewWebView.EnsureCoreWebView2Async_Workaround();
+            // This helper waits until the WebView's native control is initialized to prevent errors.
+            await WebViewExtensions.EnsureCoreWebView2Async_Workaround(PreviewWebView);
 
 #if ANDROID
-            var platformView = PreviewWebView.Handler.PlatformView as global::Android.Webkit.WebView;
+            var platformView = PreviewWebView.Handler?.PlatformView as AWebView;
             if (platformView != null)
             {
                 platformView.Settings.JavaScriptEnabled = true;
                 platformView.Settings.MediaPlaybackRequiresUserGesture = false;
-                platformView.Settings.AllowFileAccess = true;
-                platformView.SetWebChromeClient(new CustomWebChromeClient());
+                platformView.Settings.AllowFileAccess = true; // CRITICAL for local file access
+                platformView.SetWebChromeClient(new CustomWebChromeClient()); // CRITICAL for camera permissions
                 var indexPath = Path.Combine(contentRoot, "index.html");
                 PreviewWebView.Source = new UrlWebViewSource { Url = $"file://{indexPath}" };
             }
 #elif IOS
-            var platformView = PreviewWebView.Handler.PlatformView as WKWebView;
+            var platformView = PreviewWebView.Handler?.PlatformView as WKWebView;
             if (platformView != null)
             {
                 platformView.Configuration.AllowsInlineMediaPlayback = true;
-                platformView.Configuration.MediaTypesRequiringUserActionForPlaybook = WKAudiovisualMediaTypes.None;
+                platformView.Configuration.MediaTypesRequiringUserActionForPlayback = WKAudiovisualMediaTypes.None;
                 
+                // For iOS, you must explicitly grant read access to the directory containing the file.
                 var fileUrl = new NSUrl(Path.Combine(contentRoot, "index.html"), false);
                 var readAccessUrl = new NSUrl(contentRoot, true);
                 platformView.LoadFileUrl(fileUrl, readAccessUrl);
             }
 #elif WINDOWS
-            var platformView = PreviewWebView.Handler.PlatformView as Microsoft.UI.Xaml.Controls.WebView2;
+            var platformView = PreviewWebView.Handler?.PlatformView as Microsoft.UI.Xaml.Controls.WebView2;
             if (platformView != null)
             {
                 await platformView.EnsureCoreWebView2Async();
 
-                // ? CRITICAL: Configure WebView2 settings for better JavaScript support
-                var settings = platformView.CoreWebView2.Settings;
-                settings.IsScriptEnabled = true; // ? Explicitly enable JavaScript
-                settings.AreDefaultScriptDialogsEnabled = true; // ? Allow console.log, alert, etc.
-                settings.IsWebMessageEnabled = true; // ? Enable web messaging
-                settings.AreDevToolsEnabled = true; // ? Enable dev tools for debugging
-                settings.AreHostObjectsAllowed = true; // ? Allow host objects
-                settings.IsGeneralAutofillEnabled = false; // ? Disable autofill to avoid interference
-                settings.IsPasswordAutosaveEnabled = false; // ? Disable password save
-
-                // ? IMPORTANT: Set user agent to avoid compatibility issues
-                settings.UserAgent = settings.UserAgent + " ScribbyApp/1.0";
-
-                // ? Handle JavaScript exceptions and console messages
-                platformView.CoreWebView2.ScriptException += (sender, args) =>
-                {
-                    Debug.WriteLine($"JavaScript Error: {args.Name} - {args.Message}");
-                };
-
-                // ? Enable console message logging for debugging
-                platformView.CoreWebView2.ConsoleMessage += (sender, args) =>
-                {
-                    Debug.WriteLine($"Console [{args.Kind}]: {args.Message}");
-                };
-
-                // ? Handle permission requests (Camera, Microphone, etc.)
+                // This event handler grants camera/microphone permissions when the web content requests them.
                 platformView.CoreWebView2.PermissionRequested += (sender, args) =>
                 {
-                    Debug.WriteLine($"Permission requested: {args.PermissionKind}");
-                    if (args.PermissionKind == CoreWebView2PermissionKind.Camera ||
-                        args.PermissionKind == CoreWebView2PermissionKind.Microphone)
+                    if (args.PermissionKind == CoreWebView2PermissionKind.Camera || args.PermissionKind == CoreWebView2PermissionKind.Microphone)
                     {
                         args.State = CoreWebView2PermissionState.Allow;
                     }
                 };
 
-                // ? CRITICAL: Set up virtual host mapping with proper CORS headers
+                // This creates a secure https:// origin, which is REQUIRED for WebRTC on Windows.
                 platformView.CoreWebView2.SetVirtualHostNameToFolderMapping(
-                    "webapp.local",
-                    contentRoot,
+                    "webapp.local", // A safe, virtual domain name
+                    contentRoot,    // The physical folder it points to
                     CoreWebView2HostResourceAccessKind.Allow);
 
-                // ? Add custom headers to prevent CORS issues
-                platformView.CoreWebView2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);
-                platformView.CoreWebView2.WebResourceRequested += (sender, args) =>
-                {
-                    // Add CORS headers
-                    args.Response = platformView.CoreWebView2.Environment.CreateWebResourceResponse(
-                        null, 200, "OK", "");
-                    args.Response.Headers.Add("Access-Control-Allow-Origin", "*");
-                    args.Response.Headers.Add("Access-Control-Allow-Methods", "*");
-                    args.Response.Headers.Add("Access-Control-Allow-Headers", "*");
-                };
-
-                // ? Navigate with error handling
-                try
-                {
-                    Debug.WriteLine($"Loading URL: https://webapp.local/index.html");
-                    PreviewWebView.Source = new UrlWebViewSource { Url = "https://webapp.local/index.html" };
-
-                    // ? Add navigation event handlers for debugging
-                    platformView.CoreWebView2.NavigationCompleted += (sender, args) =>
-                    {
-                        Debug.WriteLine($"Navigation completed. Success: {args.IsSuccess}");
-                        if (!args.IsSuccess)
-                        {
-                            Debug.WriteLine($"Navigation failed: {args.WebErrorStatus}");
-                        }
-                    };
-
-                    platformView.CoreWebView2.DOMContentLoaded += async (sender, args) =>
-                    {
-                        Debug.WriteLine("DOM Content Loaded");
-
-                        // ? Inject debugging script to verify JavaScript is working
-                        await platformView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(@"
-                            console.log('? WebView2 JavaScript is enabled and working!');
-                            window.addEventListener('load', () => {
-                                console.log('? Page load event fired');
-                                setTimeout(() => {
-                                    console.log('? Delayed script execution working');
-                                }, 1000);
-                            });
-                        ");
-                    };
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Error setting WebView source: {ex.Message}");
-                }
+                PreviewWebView.Source = new UrlWebViewSource { Url = "https://webapp.local/index.html" };
             }
 #endif
         }
@@ -358,16 +301,21 @@ namespace ScribbyApp.Views
 #if ANDROID
     internal class CustomWebChromeClient : WebChromeClient
     {
-        public override void OnPermissionRequest(PermissionRequest request)
+        // This is required on Android to intercept and grant permission requests from the web content.
+        public override void OnPermissionRequest(PermissionRequest? request)
         {
-            MainThread.BeginInvokeOnMainThread(() => request.Grant(request.GetResources()));
+            if (request != null)
+            {
+                MainThread.BeginInvokeOnMainThread(() => request.Grant(request.GetResources()));
+            }
         }
     }
 #endif
 
     public static class WebViewExtensions
     {
-        public static async Task EnsureCoreWebView2Async_Workaround(this WebView webView)
+        // This helper extension method avoids race conditions during WebView initialization.
+        public static async Task EnsureCoreWebView2Async_Workaround(this Microsoft.Maui.Controls.WebView webView)
         {
             if (webView.Handler?.PlatformView != null) return;
             var tcs = new TaskCompletionSource<bool>();
