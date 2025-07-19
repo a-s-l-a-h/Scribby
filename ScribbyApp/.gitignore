@@ -64,3 +64,10 @@ desktop.ini
 *.gguf
 
 *.so
+*.html
+*.js
+*.css
+# Ignore all folders named 'assets' anywhere in the project
+**/assets/
+**/dist/
+**/dists/
