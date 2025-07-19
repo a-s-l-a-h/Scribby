@@ -69,6 +69,13 @@ namespace ScribbyApp.Views
             {
                 platformView.Settings.JavaScriptEnabled = true;
                 platformView.Settings.MediaPlaybackRequiresUserGesture = false;
+
+                // --- FIX: Add these lines to allow local file access ---
+                platformView.Settings.AllowFileAccess = true;
+                platformView.Settings.AllowFileAccessFromFileURLs = true;
+                platformView.Settings.AllowUniversalAccessFromFileURLs = true;
+                // ---------------------------------------------------------
+
                 platformView.SetWebChromeClient(new CustomWebChromeClient());
             }
 #elif IOS
