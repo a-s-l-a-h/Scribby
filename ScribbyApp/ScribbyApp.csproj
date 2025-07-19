@@ -208,11 +208,9 @@
 	<!-- ===================================================================== -->
 
 	<ItemGroup>
-	  <MauiXaml Update="Views\ChatLLMPage.xaml" Generator="MSBuild:Compile" />
 	  <MauiXaml Update="Views\ConnectPage.xaml" Generator="MSBuild:Compile" />
 	  <MauiXaml Update="Views\ControlPage.xaml" Generator="MSBuild:Compile" />
 	  <MauiXaml Update="Views\HomePage.xaml" Generator="MSBuild:Compile" />
-	  <MauiXaml Update="Views\ScriptPage.xaml" Generator="MSBuild:Compile" />
 	  <MauiXaml Update="Views\WebViewPage.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>

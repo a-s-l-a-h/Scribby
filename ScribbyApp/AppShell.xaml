@@ -33,21 +33,8 @@
                 Route="ControlPage" />
         </Tab>
 
-        <!-- Tab 4: Scripting Page -->
-        <Tab Title="Script" Icon="code.png">
-            <ShellContent
-                Title="Script"
-                ContentTemplate="{DataTemplate views:ScriptPage}"
-                Route="ScriptPage" />
-        </Tab>
 
-        <Tab Title="Chat LLM" Icon="chat.png">
-            <!-- Ensure chat.png exists in Resources/Images or change it -->
-            <ShellContent
-                Title="Chat LLM"
-                ContentTemplate="{DataTemplate views:ChatLLMPage}"
-                Route="ChatLLMPage" />
-        </Tab>
+
 
         <Tab Title="Web" Icon="webview.png">
             <ShellContent

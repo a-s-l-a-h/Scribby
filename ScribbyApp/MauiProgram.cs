@@ -28,11 +28,10 @@ public static class MauiProgram
         // Singleton for main tab pages that should persist
         builder.Services.AddSingleton<HomePage>();
         builder.Services.AddSingleton<ConnectPage>();
-        builder.Services.AddSingleton<ChatLLMPage>(); // <-- MODIFIED: Now a singleton for persistence
+       
 
         // Transient for pages we navigate to, creating a new instance each time
         builder.Services.AddTransient<ControlPage>();
-        builder.Services.AddTransient<ScriptPage>();
         builder.Services.AddTransient<WebViewPage>();
 
         return builder.Build();

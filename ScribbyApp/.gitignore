@@ -64,3 +64,13 @@ desktop.ini
 *.gguf
 
 *.so
+*.dll
+*.js
+*.html
+*.css
+**/dist/
+**/lib/
+**/libs/
+**/assets/
+**/dists/
+**/asset/
