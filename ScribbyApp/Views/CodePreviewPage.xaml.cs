@@ -7,8 +7,6 @@ using System.Web;
 using Android.Webkit;
 #elif IOS
 using WebKit;
-#elif WINDOWS
-using Microsoft.Web.WebView2.Core;
 #endif
 
 namespace ScribbyApp.Views
@@ -60,7 +58,6 @@ namespace ScribbyApp.Views
         /// </summary>
         private async void WebViewPage_Loaded(object? sender, EventArgs e)
         {
-            await RequestWebRtcPermissions();
             await ConfigureNativeWebView();
         }
 
@@ -120,20 +117,6 @@ namespace ScribbyApp.Views
         }
 
         /// <summary>
-        /// Prompts the user for Camera and Microphone permissions needed for WebRTC features.
-        /// </summary>
-        private async Task RequestWebRtcPermissions()
-        {
-            var cameraStatus = await Permissions.RequestAsync<Permissions.Camera>();
-            var microphoneStatus = await Permissions.RequestAsync<Permissions.Microphone>();
-
-            if (cameraStatus != PermissionStatus.Granted || microphoneStatus != PermissionStatus.Granted)
-            {
-                await DisplayAlert("Permissions Required", "Camera and Microphone permissions are needed for WebRTC features. Please enable them in app settings if you change your mind.", "OK");
-            }
-        }
-
-        /// <summary>
         /// Applies platform-specific configurations to the underlying native WebView control.
         /// </summary>
         private async Task ConfigureNativeWebView()
@@ -148,18 +131,16 @@ namespace ScribbyApp.Views
             if (platformView != null)
             {
                 platformView.Settings.JavaScriptEnabled = true;
-                platformView.Settings.MediaPlaybackRequiresUserGesture = false;
+                // Permissions for camera/mic have been removed
                 platformView.Settings.AllowFileAccess = true;
                 platformView.Settings.AllowFileAccessFromFileURLs = true;
                 platformView.Settings.AllowUniversalAccessFromFileURLs = true;
-                platformView.SetWebChromeClient(new CustomWebChromeClient());
             }
 #elif IOS
             var platformView = PreviewWebView.Handler.PlatformView as WebKit.WKWebView;
             if (platformView != null)
             {
-                platformView.Configuration.AllowsInlineMediaPlayback = true;
-                platformView.Configuration.MediaTypesRequiringUserActionForPlayback = WebKit.WKAudiovisualMediaTypes.None;
+                // Configurations for inline media playback (WebRTC) have been removed
             }
 #elif WINDOWS
             var platformView = PreviewWebView.Handler.PlatformView as Microsoft.UI.Xaml.Controls.WebView2;
@@ -168,14 +149,7 @@ namespace ScribbyApp.Views
                 try
                 {
                     await platformView.EnsureCoreWebView2Async();
-                    platformView.CoreWebView2.PermissionRequested += (sender, args) =>
-                    {
-                        if (args.PermissionKind == CoreWebView2PermissionKind.Camera ||
-                            args.PermissionKind == CoreWebView2PermissionKind.Microphone)
-                        {
-                            args.State = CoreWebView2PermissionState.Allow;
-                        }
-                    };
+                    // Permission request handler for camera/mic has been removed
                 }
                 catch (Exception ex)
                 {
@@ -185,17 +159,4 @@ namespace ScribbyApp.Views
 #endif
         }
     }
-
-    /// <summary>
-    /// Helper class required on Android to handle runtime permission requests (like camera) from within a WebView.
-    /// </summary>
-#if ANDROID
-    internal class CustomWebChromeClient : WebChromeClient
-    {
-        public override void OnPermissionRequest(PermissionRequest request)
-        {
-            request.Grant(request.GetResources());
-        }
-    }
-#endif
 }

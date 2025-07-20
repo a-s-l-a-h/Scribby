@@ -34,14 +34,6 @@
         </Tab>
 
 
-
-
-        <Tab Title="Web" Icon="webview.png">
-            <ShellContent
-                Title="Web"
-                ContentTemplate="{DataTemplate views:WebViewPage}"
-                Route="WebViewPage" />
-        </Tab>
                 <Tab Title="Scripts" Icon="code.png"> <!-- Add a code.png icon to Resources/Images -->
             <ShellContent
                 Title="Scripts"

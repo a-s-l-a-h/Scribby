@@ -38,6 +38,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <MauiCss Remove="wwwroot\css - Copy\index.css" />
+	  <MauiCss Remove="wwwroot\jsartoolkit5 - Copy\css - Copy\index.css" />
+	  <MauiCss Remove="wwwroot\jsartoolkit5 - Copy\css\index.css" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Jint" Version="4.3.0" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="$(MauiVersion)" />
