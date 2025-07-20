@@ -24,15 +24,21 @@ public static class MauiProgram
 
         // Register services and pages
         builder.Services.AddSingleton<BluetoothService>();
+        // Register the database service as a singleton
+        builder.Services.AddSingleton<DatabaseService>();
 
         // Singleton for main tab pages that should persist
         builder.Services.AddSingleton<HomePage>();
         builder.Services.AddSingleton<ConnectPage>();
-       
+        // Register CodeListPage as a singleton as it's a main tab
+        builder.Services.AddSingleton<CodeListPage>();
 
         // Transient for pages we navigate to, creating a new instance each time
         builder.Services.AddTransient<ControlPage>();
         builder.Services.AddTransient<WebViewPage>();
+        //Register editor/preview pages as transient
+        builder.Services.AddTransient<CodeEditorPage>();
+        builder.Services.AddTransient<CodePreviewPage>();
 
         return builder.Build();
     }

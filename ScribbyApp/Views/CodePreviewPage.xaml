@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScribbyApp.Views.CodePreviewPage"
+             Title="Preview">
+    <Grid RowDefinitions="*, Auto">
+        <WebView Grid.Row="0"
+                 x:Name="PreviewWebView"
+                 Navigating="OnWebViewNavigating"
+                 HorizontalOptions="FillAndExpand"
+                 VerticalOptions="FillAndExpand" />
+        <Border Grid.Row="1" StrokeThickness="1" Padding="10" Margin="5">
+            <Label x:Name="StatusLabel" Text="Status: Initializing..." />
+        </Border>
+    </Grid>
+</ContentPage>
