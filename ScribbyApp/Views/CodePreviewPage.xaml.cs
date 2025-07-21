@@ -177,7 +177,7 @@ namespace ScribbyApp.Views
                 platformView.Settings.JavaScriptEnabled = true;
                 platformView.Settings.AllowFileAccess = true;
                 platformView.Settings.AllowFileAccessFromFileURLs = true;
-                platformViev.Settings.AllowUniversalAccessFromFileURLs = true;
+                //platformViev.Settings.AllowUniversalAccessFromFileURLs = true;
             }
 #elif IOS
             var platformView = PreviewWebView.Handler.PlatformView as WebKit.WKWebView;
