@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scribby Interactive Controller</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: radial-gradient(circle at center, #0a0a2e, #000);
+            font-family: 'Arial', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .controller-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .control-pad {
+            width: 300px;
+            height: 300px;
+            position: relative;
+            pointer-events: all;
+        }
+
+        .control-button {
+            position: absolute;
+            background: linear-gradient(145deg, rgba(0, 255, 255, 0.2), rgba(0, 150, 255, 0.3));
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 50%;
+            color: #00ffff;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                0 0 20px rgba(0, 255, 255, 0.3),
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .control-button:hover {
+            transform: scale(1.1);
+            box-shadow: 
+                0 0 30px rgba(0, 255, 255, 0.5),
+                inset 0 0 30px rgba(0, 255, 255, 0.2);
+            border-color: rgba(0, 255, 255, 0.8);
+        }
+
+        .control-button:active {
+            transform: scale(0.95);
+            background: linear-gradient(145deg, rgba(0, 255, 255, 0.4), rgba(0, 150, 255, 0.5));
+        }
+
+        .control-button.pressed {
+            background: linear-gradient(145deg, rgba(255, 0, 128, 0.4), rgba(255, 0, 255, 0.5));
+            border-color: rgba(255, 0, 255, 0.8);
+            color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff;
+            box-shadow: 
+                0 0 30px rgba(255, 0, 255, 0.5),
+                inset 0 0 30px rgba(255, 0, 255, 0.2);
+        }
+
+        /* Button positions */
+        .forward {
+            width: 80px;
+            height: 80px;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .left {
+            width: 80px;
+            height: 80px;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+
+        .stop {
+            width: 60px;
+            height: 60px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, rgba(255, 0, 0, 0.3), rgba(255, 100, 0, 0.4));
+            border-color: rgba(255, 0, 0, 0.6);
+            color: #ff4444;
+            font-size: 20px;
+        }
+
+        .stop:hover {
+            border-color: rgba(255, 0, 0, 0.9);
+            box-shadow: 
+                0 0 30px rgba(255, 0, 0, 0.5),
+                inset 0 0 30px rgba(255, 0, 0, 0.2);
+        }
+
+        .right {
+            width: 80px;
+            height: 80px;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+        }
+
+        .backward {
+            width: 80px;
+            height: 80px;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .status-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            color: #00ffff;
+            font-family: 'Courier New', monospace;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+        }
+
+        .speed-display {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .control-pad {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .control-button {
+                font-size: 20px;
+            }
+            
+            .forward, .left, .right, .backward {
+                width: 65px;
+                height: 65px;
+            }
+            
+            .stop {
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="trailCanvas"></canvas>
+    
+    <div class="controller-overlay">
+        <div class="control-pad">
+            <div class="control-button forward" 
+                 onpointerdown="startMovement('forward')" 
+                 onpointerup="stopMovement()" 
+                 onpointerleave="stopMovement()">W</div>
+            
+            <div class="control-button left" 
+                 onpointerdown="startMovement('left')" 
+                 onpointerup="stopMovement()" 
+                 onpointerleave="stopMovement()">A</div>
+            
+            <div class="control-button stop" 
+                 onclick="emergencyStop()">S</div>
+            
+            <div class="control-button right" 
+                 onpointerdown="startMovement('right')" 
+                 onpointerup="stopMovement()" 
+                 onpointerleave="stopMovement()">D</div>
+            
+            <div class="control-button backward" 
+                 onpointerdown="startMovement('backward')" 
+                 onpointerup="stopMovement()" 
+                 onpointerleave="stopMovement()">X</div>
+        </div>
+    </div>
+
+    <div class="status-display">
+        <div>Status: <span id="status">Ready</span></div>
+        <div class="speed-display">Speed: <span id="current-speed">255</span></div>
+        <div class="speed-display">Direction: <span id="direction">None</span></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('trailCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas to full window size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Scribby control variables
+        let currentMovement = null;
+        let movementInterval = null;
+        let lastCommandTime = 0;
+        const COMMAND_THROTTLE = 100; // Minimum 100ms between commands to handle motor delay
+        const MOTOR_SPEED = 255;
+        const MIN_SPEED = 80;
+
+        // Visual effects
+        let particles = [];
+        let hue = 0;
+        let centerX = canvas.width / 2;
+        let centerY = canvas.height / 2;
+
+        // Particle system for visual feedback
+        class Particle {
+            constructor(x, y, direction = 'none') {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 3 + 1;
+                this.life = 1.0;
+                this.decay = Math.random() * 0.02 + 0.01;
+                
+                // Set particle movement based on robot direction
+                switch(direction) {
+                    case 'forward':
+                        this.vx = (Math.random() - 0.5) * 2;
+                        this.vy = Math.random() * 2 + 1;
+                        break;
+                    case 'backward':
+                        this.vx = (Math.random() - 0.5) * 2;
+                        this.vy = -(Math.random() * 2 + 1);
+                        break;
+                    case 'left':
+                        this.vx = Math.random() * 2 + 1;
+                        this.vy = (Math.random() - 0.5) * 2;
+                        break;
+                    case 'right':
+                        this.vx = -(Math.random() * 2 + 1);
+                        this.vy = (Math.random() - 0.5) * 2;
+                        break;
+                    default:
+                        this.vx = (Math.random() - 0.5) * 4;
+                        this.vy = (Math.random() - 0.5) * 4;
+                }
+                
+                this.color = direction === 'none' ? 
+                    `hsl(${hue}, 80%, 60%)` : 
+                    `hsl(${(hue + 180) % 360}, 90%, 70%)`;
+            }
+            
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= this.decay;
+                this.size *= 0.99;
+            }
+            
+            draw() {
+                if (this.life <= 0) return;
+                
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = this.size * 2;
+                
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            isDead() {
+                return this.life <= 0 || this.size < 0.1;
+            }
+        }
+
+        // Scribby Protocol Functions
+        function sendToScribby(command) {
+            const now = Date.now();
+            if (now - lastCommandTime >= COMMAND_THROTTLE) {
+                window.location.href = `scribby://send?command=${command}`;
+                lastCommandTime = now;
+                console.log('Sent:', command);
+                return true;
+            }
+            return false;
+        }
+
+        function startMovement(direction) {
+            if (currentMovement === direction) return;
+            
+            currentMovement = direction;
+            updateUI();
+            executeMovement(direction);
+            
+            // Create visual feedback
+            createMovementParticles(direction);
+            
+            // Set up continuous movement with throttling
+            if (movementInterval) clearInterval(movementInterval);
+            movementInterval = setInterval(() => {
+                if (currentMovement === direction) {
+                    executeMovement(direction);
+                    createMovementParticles(direction);
+                }
+            }, COMMAND_THROTTLE);
+        }
+
+        function executeMovement(direction) {
+            let success = false;
+            
+            switch(direction) {
+                case 'forward':
+                    success = sendToScribby(`fgallk-${MOTOR_SPEED}`);
+                    break;
+                case 'backward':
+                    success = sendToScribby(`bgallk-${MOTOR_SPEED}`);
+                    break;
+                case 'left':
+                    success = sendToScribby(`bgflk-${MOTOR_SPEED}`) &&
+                             sendToScribby(`bgblk-${MOTOR_SPEED}`) &&
+                             sendToScribby(`fgfrk-${MOTOR_SPEED}`) &&
+                             sendToScribby(`fgbrk-${MOTOR_SPEED}`);
+                    break;
+                case 'right':
+                    success = sendToScribby(`fgflk-${MOTOR_SPEED}`) &&
+                             sendToScribby(`fgblk-${MOTOR_SPEED}`) &&
+                             sendToScribby(`bgfrk-${MOTOR_SPEED}`) &&
+                             sendToScribby(`bgbrk-${MOTOR_SPEED}`);
+                    break;
+            }
+            
+            if (success) {
+                document.getElementById('status').textContent = `Moving ${direction}`;
+            }
+        }
+
+        function stopMovement() {
+            if (!currentMovement) return;
+            
+            currentMovement = null;
+            if (movementInterval) {
+                clearInterval(movementInterval);
+                movementInterval = null;
+            }
+            
+            sendToScribby('s');
+            updateUI();
+            
+            // Create stop particles
+            createMovementParticles('none');
+            
+            document.getElementById('status').textContent = 'Stopped';
+        }
+
+        function emergencyStop() {
+            stopMovement();
+            // Send multiple stop commands for safety
+            sendToScribby('s');
+            setTimeout(() => sendToScribby('s'), 50);
+            
+            document.getElementById('status').textContent = 'Emergency Stop';
+            
+            // Visual feedback for emergency stop
+            for (let i = 0; i < 20; i++) {
+                particles.push(new Particle(
+                    centerX + (Math.random() - 0.5) * 100,
+                    centerY + (Math.random() - 0.5) * 100,
+                    'none'
+                ));
+            }
+        }
+
+        function updateUI() {
+            // Remove pressed class from all buttons
+            document.querySelectorAll('.control-button').forEach(btn => {
+                btn.classList.remove('pressed');
+            });
+            
+            // Add pressed class to current movement button
+            if (currentMovement) {
+                const button = document.querySelector(`.${currentMovement}`);
+                if (button) button.classList.add('pressed');
+            }
+            
+            document.getElementById('direction').textContent = currentMovement || 'None';
+            document.getElementById('current-speed').textContent = MOTOR_SPEED;
+        }
+
+        function createMovementParticles(direction) {
+            const count = direction === 'none' ? 10 : 3;
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(
+                    centerX + (Math.random() - 0.5) * 60,
+                    centerY + (Math.random() - 0.5) * 60,
+                    direction
+                ));
+            }
+        }
+
+        function animate() {
+            // Fade effect
+            ctx.fillStyle = 'rgba(10, 10, 46, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Update and draw particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const particle = particles[i];
+                particle.update();
+                particle.draw();
+                
+                if (particle.isDead()) {
+                    particles.splice(i, 1);
+                }
+            }
+            
+            // Update color hue
+            hue += 1;
+            if (hue >= 360) hue = 0;
+            
+            // Continuous particle generation when moving
+            if (currentMovement && Math.random() < 0.3) {
+                createMovementParticles(currentMovement);
+            }
+            
+            requestAnimationFrame(animate);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            centerX = canvas.width / 2;
+            centerY = canvas.height / 2;
+        });
+
+        // Prevent context menu on long press
+        document.addEventListener('contextmenu', e => e.preventDefault());
+
+        // Initialize
+        updateUI();
+        animate();
+
+        // Add some initial particles for visual appeal
+        for (let i = 0; i < 50; i++) {
+            particles.push(new Particle(
+                Math.random() * canvas.width,
+                Math.random() * canvas.height,
+                'none'
+            ));
+        }
+    </script>
+</body>
+</html>

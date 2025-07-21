@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Scribby Neon Star Controller</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+            touch-action: none; /* Prevents scrolling and zooming on touch devices */
+        }
+        canvas {
+            display: block;
+            background: radial-gradient(circle at center, #0a0a2e, #000);
+            cursor: none;
+        }
+        .cursor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #00ffff;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px #00ffff, inset 0 0 10px rgba(0, 255, 255, 0.3);
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="controlCanvas"></canvas>
+    <div class="cursor" id="cursor"></div>
+
+    <script>
+    // --- Configuration ---
+    const MIN_SPEED = 80;
+    const MAX_SPEED = 255;
+    const COMMAND_INTERVAL_MS = 150;
+
+    // --- Scribby Communication ---
+    function sendToScribby(command) {
+        window.location.href = `scribby://send?command=${command}`;
+    }
+
+    // --- Canvas & UI Setup ---
+    const canvas = document.getElementById('controlCanvas');
+    const ctx = canvas.getContext('2d');
+    const cursor = document.getElementById('cursor');
+
+    let isControlling = false;
+    let controlInterval = null;
+    let lastTouch = { x: 0, y: 0 };
+    let joystick = { centerX: 0, centerY: 0, radius: 0, deadZoneRadius: 0 };
+    
+    // --- Animation & Particle System ---
+    let particles = [];
+    let hue = 0;
+
+    class Particle {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.vx = (Math.random() - 0.5) * 4;
+            this.vy = (Math.random() - 0.5) * 4;
+            this.lifespan = 100;
+            this.age = 0;
+            this.size = Math.random() * 5 + 2;
+            this.hue = hue;
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vx *= 0.96;
+            this.vy *= 0.96;
+            this.age++;
+        }
+
+        isDead() {
+            return this.age >= this.lifespan;
+        }
+
+        draw(context) {
+            const alpha = 1 - (this.age / this.lifespan);
+            context.beginPath();
+            context.arc(this.x, this.y, this.size * alpha, 0, Math.PI * 2);
+            context.fillStyle = `hsla(${this.hue}, 100%, 70%, ${alpha})`;
+            context.shadowColor = `hsl(${this.hue}, 100%, 60%)`;
+            context.shadowBlur = 15;
+            context.fill();
+        }
+    }
+
+    function emitParticles() {
+        if (!isControlling) return;
+        for (let i = 0; i < 3; i++) {
+            particles.push(new Particle(lastTouch.x, lastTouch.y));
+        }
+    }
+
+    function setupCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        joystick.centerX = canvas.width / 2;
+        joystick.centerY = canvas.height / 2;
+        joystick.radius = Math.min(canvas.width, canvas.height) * 0.4;
+        joystick.deadZoneRadius = joystick.radius * 0.15;
+    }
+
+    function drawJoystick() {
+        ctx.beginPath();
+        ctx.arc(joystick.centerX, joystick.centerY, joystick.radius, 0, 2 * Math.PI);
+        ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = 'rgba(0, 255, 255, 0.7)';
+        ctx.shadowBlur = 20;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.beginPath();
+        ctx.arc(joystick.centerX, joystick.centerY, joystick.deadZoneRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.fill();
+
+        if (isControlling) {
+            ctx.beginPath();
+            ctx.arc(lastTouch.x, lastTouch.y, joystick.deadZoneRadius * 1.2, 0, 2 * Math.PI);
+            ctx.fillStyle = `hsla(${hue}, 90%, 70%, 0.5)`;
+            ctx.strokeStyle = `hsl(${hue}, 90%, 80%)`;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = `hsl(${hue}, 90%, 70%)`;
+            ctx.shadowBlur = 25;
+            ctx.fill();
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+    }
+    
+    // --- Main Control Logic ---
+    function calculateAndSendCommand() {
+        if (!isControlling) return;
+        let dx = lastTouch.x - joystick.centerX;
+        let dy = lastTouch.y - joystick.centerY;
+        let distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance < joystick.deadZoneRadius) {
+            sendToScribby('s');
+            return;
+        }
+
+        let normalizedX = dx / joystick.radius;
+        let normalizedY = -dy / joystick.radius;
+        normalizedX = Math.max(-1, Math.min(1, normalizedX));
+        normalizedY = Math.max(-1, Math.min(1, normalizedY));
+        let baseSpeed = normalizedY * MAX_SPEED;
+        let turnEffect = normalizedX * MAX_SPEED * 0.8;
+        let leftSpeed = baseSpeed - turnEffect;
+        let rightSpeed = baseSpeed + turnEffect;
+        leftSpeed = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, leftSpeed));
+        rightSpeed = Math.max(-MAX_SPEED, Math.min(MAX_SPEED, rightSpeed));
+        
+        sendCommandForSide('l', leftSpeed);
+        sendCommandForSide('r', rightSpeed);
+    }
+    
+    // ===================================================================
+    // === THIS IS THE CORRECTED FUNCTION ===
+    // ===================================================================
+    function sendCommandForSide(side, speed) {
+        let direction = speed > 0 ? 'f' : 'b';
+        let absSpeed = Math.abs(speed);
+
+        // If calculated speed is below the minimum, do nothing for this side.
+        // The motor will be stopped by the global 's' command on release.
+        if (absSpeed < MIN_SPEED) {
+            return; 
+        }
+        
+        let commandSpeed = Math.floor(absSpeed);
+
+        // Send commands for the front and back motors on the given side.
+        sendToScribby(`${direction}gf${side}k-${commandSpeed}`);
+        sendToScribby(`${direction}gb${side}k-${commandSpeed}`);
+    }
+    
+    // --- Main Animation Loop ---
+    function animate() {
+        ctx.fillStyle = 'rgba(0, 0, 10, 0.2)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        drawJoystick();
+        
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.update();
+            p.draw(ctx);
+            if (p.isDead()) {
+                particles.splice(i, 1);
+            }
+        }
+        ctx.shadowBlur = 0;
+        hue = (hue + 0.5) % 360;
+        requestAnimationFrame(animate);
+    }
+
+    // --- Event Listeners ---
+    function onPointerDown(e) {
+        isControlling = true;
+        updatePointerPosition(e);
+        if (controlInterval) clearInterval(controlInterval);
+        controlInterval = setInterval(calculateAndSendCommand, COMMAND_INTERVAL_MS);
+    }
+
+    function onPointerUp(e) {
+        isControlling = false;
+        if (controlInterval) clearInterval(controlInterval);
+        controlInterval = null;
+        sendToScribby('s');
+    }
+
+    function onPointerMove(e) {
+        if (!isControlling) return;
+        updatePointerPosition(e);
+        emitParticles();
+    }
+    
+    function updatePointerPosition(e) {
+        lastTouch.x = e.clientX;
+        lastTouch.y = e.clientY;
+        cursor.style.left = lastTouch.x + 'px';
+        cursor.style.top = lastTouch.y + 'px';
+        cursor.style.borderColor = `hsl(${hue}, 100%, 50%)`;
+        cursor.style.boxShadow = `0 0 20px hsl(${hue}, 100%, 50%)`;
+    }
+
+    canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointerup', onPointerUp);
+    canvas.addEventListener('pointerleave', onPointerUp);
+    canvas.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('resize', setupCanvas);
+
+    // --- Initialization ---
+    setupCanvas();
+    animate();
+    </script>
+</body>
+</html>
