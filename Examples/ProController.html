@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scribby Pro Controller - Color Themes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style>
+        :root {
+            /* Ocean Theme */
+            --bg-gradient-ocean: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            --card-bg-ocean: rgba(30, 58, 138, 0.15);
+            --button-bg-ocean: linear-gradient(145deg, #06b6d4, #0891b2);
+            --button-hover-ocean: linear-gradient(145deg, #22d3ee, #0ea5e9);
+            --stop-button-bg-ocean: linear-gradient(145deg, #f59e0b, #d97706);
+            
+            /* Sunset Theme */
+            --bg-gradient-sunset: linear-gradient(135deg, #7c2d12 0%, #dc2626 50%, #ea580c 100%);
+            --card-bg-sunset: rgba(220, 38, 38, 0.15);
+            --button-bg-sunset: linear-gradient(145deg, #f59e0b, #d97706);
+            --button-hover-sunset: linear-gradient(145deg, #fbbf24, #f59e0b);
+            --stop-button-bg-sunset: linear-gradient(145deg, #10b981, #059669);
+            
+            /* Forest Theme */
+            --bg-gradient-forest: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+            --card-bg-forest: rgba(6, 95, 70, 0.15);
+            --button-bg-forest: linear-gradient(145deg, #10b981, #059669);
+            --button-hover-forest: linear-gradient(145deg, #34d399, #10b981);
+            --stop-button-bg-forest: linear-gradient(145deg, #ef4444, #dc2626);
+            
+            /* Cyber Theme */
+            --bg-gradient-cyber: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            --card-bg-cyber: rgba(0, 255, 255, 0.1);
+            --button-bg-cyber: linear-gradient(145deg, #00ffff, #0891b2);
+            --button-hover-cyber: linear-gradient(145deg, #22d3ee, #00ffff);
+            --stop-button-bg-cyber: linear-gradient(145deg, #ff0080, #e11d48);
+            
+            /* Current theme variables */
+            --bg-gradient: var(--bg-gradient-ocean);
+            --card-bg: var(--card-bg-ocean);
+            --button-bg: var(--button-bg-ocean);
+            --button-hover: var(--button-hover-ocean);
+            --stop-button-bg: var(--stop-button-bg-ocean);
+            
+            --button-inactive-bg: rgba(148, 163, 184, 0.3);
+            --text-color: #f8fafc;
+            --shadow: 0 8px 32px rgba(6, 182, 212, 0.3);
+            --border: 1px solid rgba(148, 163, 184, 0.3);
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overscroll-behavior: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        .theme-selector {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .theme-button {
+            padding: 12px 20px;
+            border: 2px solid transparent;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .theme-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .theme-button.active {
+            border-color: var(--text-color);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 440px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: var(--border);
+            box-shadow: var(--shadow);
+            padding: 30px 25px;
+        }
+
+        h1 { 
+            display: none;
+        }
+
+        .remote-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            gap: 25px;
+            align-items: center;
+            justify-items: center;
+            aspect-ratio: 1;
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+        
+        /* Ensure perfect horizontal alignment for middle row */
+        #left-stack, #stop-button, #right-stack {
+            align-self: center;
+        }
+        
+        #left-stack .main-button, #right-stack .main-button {
+            margin-top: 0;
+            margin-bottom: 0;
+        }
+
+        .button-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+            max-width: 95px;
+            justify-content: center;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            height: 70px; /* Same height as main button for consistent alignment */
+        }
+
+        .main-button {
+            width: 70px;
+            height: 70px;
+            background: var(--button-bg);
+            border-radius: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 32px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            border: var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .main-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .main-button:hover::before {
+            left: 100%;
+        }
+
+        .main-button:active {
+            transform: scale(0.92);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .main-button:hover {
+            background: var(--button-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+        
+        .speed-button {
+            width: 35px;
+            height: 35px;
+            background: var(--button-inactive-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: var(--border);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .speed-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.2);
+        }
+
+        .speed-button:active {
+            transform: scale(0.9);
+        }
+        
+        .speed-button.hidden {
+            visibility: hidden;
+        }
+
+        .speed-display {
+            font-size: 16px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            padding: 8px 16px;
+            border-radius: 12px;
+            min-width: 60px;
+            border: var(--border);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Grid placement */
+        #forward-stack { grid-area: 1 / 2 / 2 / 3; }
+        #left-stack    { grid-area: 2 / 1 / 3 / 2; }
+        #stop-button   { 
+            grid-area: 2 / 2 / 3 / 3; 
+            background: var(--stop-button-bg);
+            align-self: start;
+            margin-top: 0;
+        }
+        #stop-button:hover {
+            background: var(--stop-button-bg);
+            filter: brightness(1.2);
+        }
+        #right-stack   { grid-area: 2 / 3 / 3 / 4; }
+        #backward-stack{ grid-area: 3 / 2 / 4 / 3; }
+
+        /* Responsive design */
+        @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            
+            .theme-selector {
+                gap: 10px;
+            }
+            
+            .theme-button {
+                padding: 10px 16px;
+                font-size: 12px;
+            }
+            
+            .container {
+                padding: 25px 20px;
+            }
+            
+            .main-button {
+                width: 75px;
+                height: 75px;
+                font-size: 32px;
+            }
+            
+            .speed-button {
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
+            
+            .control-group {
+                gap: 12px;
+            }
+            
+            .remote-grid {
+                gap: 15px;
+            }
+        }
+
+        /* Animation for page load */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
+    
+    <script>
+        // === SCRIPT CONFIGURATION ===
+        const MIN_SPEED = 80;
+        const MAX_SPEED = 255;
+        const SPEED_ADJUSTMENT = 30;
+
+        const speeds = {
+            forward: MAX_SPEED,
+            backward: MAX_SPEED,
+            left: MAX_SPEED,
+            right: MAX_SPEED
+        };
+
+        const themes = {
+            ocean: {
+                '--bg-gradient': 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
+                '--card-bg': 'rgba(30, 58, 138, 0.15)',
+                '--button-bg': 'linear-gradient(145deg, #06b6d4, #0891b2)',
+                '--button-hover': 'linear-gradient(145deg, #22d3ee, #0ea5e9)',
+                '--stop-button-bg': 'linear-gradient(145deg, #f59e0b, #d97706)',
+                '--shadow': '0 8px 32px rgba(6, 182, 212, 0.3)',
+                '--border': '1px solid rgba(148, 163, 184, 0.3)'
+            },
+            sunset: {
+                '--bg-gradient': 'linear-gradient(135deg, #7c2d12 0%, #dc2626 50%, #ea580c 100%)',
+                '--card-bg': 'rgba(220, 38, 38, 0.15)',
+                '--button-bg': 'linear-gradient(145deg, #f59e0b, #d97706)',
+                '--button-hover': 'linear-gradient(145deg, #fbbf24, #f59e0b)',
+                '--stop-button-bg': 'linear-gradient(145deg, #10b981, #059669)',
+                '--shadow': '0 8px 32px rgba(245, 158, 11, 0.3)',
+                '--border': '1px solid rgba(251, 191, 36, 0.3)'
+            },
+            forest: {
+                '--bg-gradient': 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)',
+                '--card-bg': 'rgba(6, 95, 70, 0.15)',
+                '--button-bg': 'linear-gradient(145deg, #10b981, #059669)',
+                '--button-hover': 'linear-gradient(145deg, #34d399, #10b981)',
+                '--stop-button-bg': 'linear-gradient(145deg, #ef4444, #dc2626)',
+                '--shadow': '0 8px 32px rgba(16, 185, 129, 0.3)',
+                '--border': '1px solid rgba(52, 211, 153, 0.3)'
+            },
+            cyber: {
+                '--bg-gradient': 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%)',
+                '--card-bg': 'rgba(0, 255, 255, 0.1)',
+                '--button-bg': 'linear-gradient(145deg, #00ffff, #0891b2)',
+                '--button-hover': 'linear-gradient(145deg, #22d3ee, #00ffff)',
+                '--stop-button-bg': 'linear-gradient(145deg, #ff0080, #e11d48)',
+                '--shadow': '0 8px 32px rgba(0, 255, 255, 0.3)',
+                '--border': '1px solid rgba(0, 255, 255, 0.3)'
+            }
+        };
+
+        function changeTheme(themeName) {
+            const theme = themes[themeName];
+            const root = document.documentElement;
+            
+            Object.entries(theme).forEach(([property, value]) => {
+                root.style.setProperty(property, value);
+            });
+            
+            // Update active button
+            document.querySelectorAll('.theme-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`theme-${themeName}`).classList.add('active');
+        }
+
+        function sendToScribby(command) {
+            window.location.href = `scribby://send?command=${command}`;
+        }
+        
+        function adjustSpeed(movement, direction) {
+            let currentSpeed = speeds[movement];
+            currentSpeed += direction * SPEED_ADJUSTMENT;
+            
+            speeds[movement] = Math.max(MIN_SPEED, Math.min(MAX_SPEED, currentSpeed));
+            
+            updateUIForMovement(movement);
+        }
+
+        function updateUIForMovement(movement) {
+            const currentSpeed = speeds[movement];
+            document.getElementById(`${movement}-speed-display`).innerText = currentSpeed;
+            const plusButton = document.getElementById(`${movement}-plus`);
+            const minusButton = document.getElementById(`${movement}-minus`);
+            minusButton.classList.toggle('hidden', currentSpeed <= MIN_SPEED);
+            plusButton.classList.toggle('hidden', currentSpeed >= MAX_SPEED);
+        }
+        
+        function initializeUI() {
+            for (const movement in speeds) {
+                updateUIForMovement(movement);
+            }
+            // Set default theme as active
+            document.getElementById('theme-ocean').classList.add('active');
+        }
+
+        // --- Movement Functions (using kickstart 'k') ---
+        function moveForward()  { sendToScribby(`fgallk-${speeds.forward}`); }
+        function moveBackward() { sendToScribby(`bgallk-${speeds.backward}`); }
+        function stop()         { sendToScribby('s'); }
+
+        function turnLeft() {
+            const speed = speeds.left;
+            sendToScribby(`bgflk-${speed}`);
+            sendToScribby(`bgblk-${speed}`);
+            sendToScribby(`fgfrk-${speed}`);
+            sendToScribby(`fgbrk-${speed}`);
+        }
+
+        function turnRight() {
+            const speed = speeds.right;
+            sendToScribby(`fgflk-${speed}`);
+            sendToScribby(`fgblk-${speed}`);
+            sendToScribby(`bgfrk-${speed}`);
+            sendToScribby(`bgbrk-${speed}`);
+        }
+    </script>
+</head>
+<body onload="initializeUI()">
+    <div class="theme-selector">
+        <div class="theme-button" id="theme-ocean" onclick="changeTheme('ocean')">🌊 Ocean</div>
+        <div class="theme-button" id="theme-sunset" onclick="changeTheme('sunset')">🌅 Sunset</div>
+        <div class="theme-button" id="theme-forest" onclick="changeTheme('forest')">🌲 Forest</div>
+        <div class="theme-button" id="theme-cyber" onclick="changeTheme('cyber')">⚡ Cyber</div>
+    </div>
+
+    <div class="container">
+        <h1>Scribby Controller</h1>
+        
+        <div class="remote-grid">
+            
+            <div id="forward-stack" class="button-stack">
+                <div class="control-group">
+                    <div class="speed-button" id="forward-minus" onclick="adjustSpeed('forward', -1)">-</div>
+                    <div class="main-button" onpointerdown="moveForward()" onpointerup="stop()">W</div>
+                    <div class="speed-button" id="forward-plus" onclick="adjustSpeed('forward', 1)">+</div>
+                </div>
+                <div class="speed-display" id="forward-speed-display"></div>
+            </div>
+
+            <div id="left-stack" class="button-stack">
+                <div class="control-group">
+                    <div class="speed-button" id="left-minus" onclick="adjustSpeed('left', -1)">-</div>
+                    <div class="main-button" onpointerdown="turnLeft()" onpointerup="stop()">A</div>
+                    <div class="speed-button" id="left-plus" onclick="adjustSpeed('left', 1)">+</div>
+                </div>
+                <div class="speed-display" id="left-speed-display"></div>
+            </div>
+
+            <div id="stop-button" class="main-button" onclick="stop()">S</div>
+
+            <div id="right-stack" class="button-stack">
+                 <div class="control-group">
+                    <div class="speed-button" id="right-minus" onclick="adjustSpeed('right', -1)">-</div>
+                    <div class="main-button" onpointerdown="turnRight()" onpointerup="stop()">D</div>
+                    <div class="speed-button" id="right-plus" onclick="adjustSpeed('right', 1)">+</div>
+                </div>
+                <div class="speed-display" id="right-speed-display"></div>
+            </div>
+
+            <div id="backward-stack" class="button-stack">
+                <div class="control-group">
+                    <div class="speed-button" id="backward-minus" onclick="adjustSpeed('backward', -1)">-</div>
+                    <div class="main-button" onpointerdown="moveBackward()" onpointerup="stop()">X</div>
+                    <div class="speed-button" id="backward-plus" onclick="adjustSpeed('backward', 1)">+</div>
+                </div>
+                <div class="speed-display" id="backward-speed-display"></div>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

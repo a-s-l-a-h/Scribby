@@ -134,221 +134,83 @@ This version includes:
 
 ---
 ```
-<!DOCTYPE html>
+<style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+        table {
+            width: 100vw;
+            height: 100vh;
+            border-collapse: collapse;
+        }
+        td {
+            width: 33.33%;
+            height: 33.33%;
+            text-align: center;
+            vertical-align: middle;
+        }
+        button {
+            width: 80%;
+            height: 80%;
+            font-size: 2em;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style><!DOCTYPE html>
 <html>
 <head>
-    <title>Scribby Pro Controller</title>
+    <title>Scribby Controller</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <style>
-        :root {
-            --bg-color: #36393f;
-            --button-bg: #5865f2;
-            --button-inactive-bg: #4f545c;
-            --stop-button-bg: #ed4245;
-            --text-color: #ffffff;
-            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
 
-        body {
-            font-family: var(--font);
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            text-align: center;
-            margin: 0;
-            padding: 15px;
-            overscroll-behavior: none; /* Prevents pull-to-refresh */
-            user-select: none; /* Disables text selection on buttons */
-        }
-
-        .container { max-width: 400px; margin: 0 auto; }
-        h1 { margin-bottom: 20px; }
-
-        .remote-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 1fr 1fr 1fr;
-            gap: 10px;
-        }
-
-        /* A flex container for a row of buttons like [-, W, +] */
-        .control-group { display: flex; align-items: center; justify-content: center; gap: 12px; }
-
-        /* A stack for the control-group AND its speed display below it */
-        .button-stack { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-
-        .main-button {
-            width: 75px;
-            height: 75px;
-            background-color: var(--button-inactive-bg);
-            border-radius: 18px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 32px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.05s ease-out;
-        }
-
-        .main-button:active {
-            transform: scale(0.95); /* Visual feedback on press */
-            background-color: var(--button-bg);
-        }
-        
-        .speed-button {
-            width: 45px;
-            height: 45px;
-            background-color: #2f3136;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 30px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        
-        /* This class makes the +/- buttons disappear when speed is at min/max */
-        .speed-button.hidden { visibility: hidden; }
-
-        .speed-display {
-            font-size: 14px;
-            font-weight: bold;
-            font-family: monospace;
-            color: #b9bbbe;
-            background-color: rgba(0,0,0,0.3);
-            padding: 5px 12px;
-            border-radius: 8px;
-            min-width: 30px;
-        }
-        
-        /* Placing each button stack in its correct grid position */
-        #forward-stack  { grid-area: 1 / 2 / 2 / 3; }
-        #left-stack     { grid-area: 2 / 1 / 3 / 2; }
-        #stop-button    { grid-area: 2 / 2 / 3 / 3; background-color: var(--stop-button-bg); }
-        #right-stack    { grid-area: 2 / 3 / 3 / 4; }
-        #backward-stack { grid-area: 3 / 2 / 4 / 3; }
-    </style>
     
     <script>
-        // --- Configuration ---
-        const MIN_SPEED = 80;
-        const MAX_SPEED = 255;
-        const SPEED_ADJUSTMENT = 30; // How much speed changes with each +/- press
-
-        // --- Data Store ---
-        // An object to hold the current speed for each movement direction.
-        const speeds = {
-            forward: MAX_SPEED,
-            backward: MAX_SPEED,
-            left: MAX_SPEED,
-            right: MAX_SPEED
-        };
-
-        // --- Core Communication Function ---
         function sendToScribby(command) {
             window.location.href = `scribby://send?command=${command}`;
         }
-        
-        // --- UI and Data Logic ---
-        function adjustSpeed(movement, direction) {
-            let currentSpeed = speeds[movement];
-            currentSpeed += direction * SPEED_ADJUSTMENT; // direction is -1 or 1
-            
-            // Clamp the speed to stay within the MIN_SPEED and MAX_SPEED limits.
-            speeds[movement] = Math.max(MIN_SPEED, Math.min(MAX_SPEED, currentSpeed));
-            
-            updateUIForMovement(movement);
-        }
 
-        // Updates the speed display number and hides/shows the +/- buttons.
-        function updateUIForMovement(movement) {
-            const currentSpeed = speeds[movement];
-            document.getElementById(`${movement}-speed-display`).innerText = currentSpeed;
-            document.getElementById(`${movement}-minus`).classList.toggle('hidden', currentSpeed <= MIN_SPEED);
-            document.getElementById(`${movement}-plus`).classList.toggle('hidden', currentSpeed >= MAX_SPEED);
-        }
-        
-        // Called when the page loads to set the initial UI state.
-        function initializeUI() {
-            for (const movement in speeds) {
-                updateUIForMovement(movement);
-            }
-        }
-
-        // --- Robot Movement Functions ---
-        function moveForward()  { sendToScribby(`fgallk-${speeds.forward}`); }
-        function moveBackward() { sendToScribby(`bgallk-${speeds.backward}`); }
+        function moveForward()  { sendToScribby('fgallk-255'); }
+        function moveBackward() { sendToScribby('bgallk-255'); }
         function stop()         { sendToScribby('s'); }
 
-        // To turn left on the spot, run left-side motors backward and right-side forward.
         function turnLeft() {
-            const speed = speeds.left;
-            sendToScribby(`bgflk-${speed}`); // Back-Go Front-Left
-            sendToScribby(`bgblk-${speed}`); // Back-Go Back-Left
-            sendToScribby(`fgfrk-${speed}`); // Fwd-Go Front-Right
-            sendToScribby(`fgbrk-${speed}`); // Fwd-Go Back-Right
+            sendToScribby('bgflk-255');
+            sendToScribby('bgblk-255');
+            sendToScribby('fgfrk-255');
+            sendToScribby('fgbrk-255');
         }
 
-        // To turn right, do the opposite. Run left-side motors forward and right-side backward.
         function turnRight() {
-            const speed = speeds.right;
-            sendToScribby(`fgflk-${speed}`); // Fwd-Go Front-Left
-            sendToScribby(`fgblk-${speed}`); // Fwd-Go Back-Left
-            sendToScribby(`bgfrk-${speed}`); // Back-Go Front-Right
-            sendToScribby(`bgbrk-${speed}`); // Back-Go Back-Right
+            sendToScribby('fgflk-255');
+            sendToScribby('fgblk-255');
+            sendToScribby('bgfrk-255');
+            sendToScribby('bgbrk-255');
         }
     </script>
 </head>
-<body onload="initializeUI()"> <!-- Initialize the UI when the page finishes loading -->
-    <div class="container">
-        <h1>Pro Controller</h1>
-        
-        <div class="remote-grid">
-            <!-- Forward Button Group -->
-            <div id="forward-stack" class="button-stack">
-                <div class="control-group">
-                    <div class="speed-button" id="forward-minus" onclick="adjustSpeed('forward', -1)">-</div>
-                    <div class="main-button" onpointerdown="moveForward()" onpointerup="stop()">W</div>
-                    <div class="speed-button" id="forward-plus" onclick="adjustSpeed('forward', 1)">+</div>
-                </div>
-                <div class="speed-display" id="forward-speed-display"></div>
-            </div>
-
-            <!-- Left Button Group -->
-            <div id="left-stack" class="button-stack">
-                <div class="control-group">
-                    <div class="speed-button" id="left-minus" onclick="adjustSpeed('left', -1)">-</div>
-                    <div class="main-button" onpointerdown="turnLeft()" onpointerup="stop()">A</div>
-                    <div class="speed-button" id="left-plus" onclick="adjustSpeed('left', 1)">+</div>
-                </div>
-                <div class="speed-display" id="left-speed-display"></div>
-            </div>
-
-            <!-- Stop Button -->
-            <div id="stop-button" class="main-button" onclick="stop()">S</div>
-
-            <!-- Right Button Group -->
-            <div id="right-stack" class="button-stack">
-                 <div class="control-group">
-                    <div class="speed-button" id="right-minus" onclick="adjustSpeed('right', -1)">-</div>
-                    <div class="main-button" onpointerdown="turnRight()" onpointerup="stop()">D</div>
-                    <div class="speed-button" id="right-plus" onclick="adjustSpeed('right', 1)">+</div>
-                </div>
-                <div class="speed-display" id="right-speed-display"></div>
-            </div>
-
-            <!-- Backward Button Group -->
-            <div id="backward-stack" class="button-stack">
-                <div class="control-group">
-                    <div class="speed-button" id="backward-minus" onclick="adjustSpeed('backward', -1)">-</div>
-                    <div class="main-button" onpointerdown="moveBackward()" onpointerup="stop()">X</div>
-                    <div class="speed-button" id="backward-plus" onclick="adjustSpeed('backward', 1)">+</div>
-                </div>
-                <div class="speed-display" id="backward-speed-display"></div>
-            </div>
-        </div>
-    </div>
+<body>
+    <table>
+        <tr>
+            <td></td>
+            <td><button onpointerdown="moveForward()" onpointerup="stop()">W</button></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td><button onpointerdown="turnLeft()" onpointerup="stop()">A</button></td>
+            <td><button onclick="stop()">S</button></td>
+            <td><button onpointerdown="turnRight()" onpointerup="stop()">D</button></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td><button onpointerdown="moveBackward()" onpointerup="stop()">X</button></td>
+            <td></td>
+        </tr>
+    </table>
 </body>
 </html>
 ```
