@@ -192,7 +192,7 @@ public class BluetoothService : IDisposable
         // This method remains unchanged...
         try
         {
-            var bytes = Encoding.UTF8.GetBytes(command);
+            var bytes = Encoding.UTF8.GetBytes(command + "\n");
             var success = await characteristic.WriteAsync(bytes);
             if (success > 0)
                 StatusChanged?.Invoke(this, $"Sent '{command}' successfully.");
