@@ -13,7 +13,7 @@ const int BLUETOOTH_TX_PIN = 10;
 // --- 2. Performance Tuning ---
 const int MINIMUM_MOTOR_SPEED  = 0;
 const int MAXIMUM_MOTOR_SPEED  = 255;
-const unsigned long KICKSTART_DURATION_MS = 80; // Renamed for clarity
+const unsigned long KICKSTART_DURATION_MS = 200; // Renamed for clarity
 
 // --- 3. Primitive Movement Speed ---
 const int PRIMITIVE_MOVEMENT_SPEED = 255;
