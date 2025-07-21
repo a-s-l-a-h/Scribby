@@ -3,12 +3,43 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="ScribbyApp.Views.CodePreviewPage"
              Title="Preview">
+
+    <!-- The ToolbarItem has been removed from here. -->
+
     <Grid RowDefinitions="*, Auto">
-        <WebView Grid.Row="0"
-                 x:Name="PreviewWebView"
-                 Navigating="OnWebViewNavigating"
-                 HorizontalOptions="FillAndExpand"
-                 VerticalOptions="FillAndExpand" />
+
+        <!-- 
+        NEW LAYOUT: A nested Grid in the first row.
+        This allows us to layer controls on top of each other.
+        -->
+        <Grid Grid.Row="0">
+            <!-- Layer 1: The WebView (takes up the whole space) -->
+            <WebView
+                x:Name="PreviewWebView"
+                Navigating="OnWebViewNavigating"
+                HorizontalOptions="FillAndExpand"
+                VerticalOptions="FillAndExpand" />
+
+            <!-- 
+            Layer 2: The new Floating Button.
+            It's placed on top of the WebView.
+            -->
+            <Button x:Name="EmergencyStopButton"
+                    Text="Stop"
+                    Clicked="OnEmergencyStopClicked"
+                    HorizontalOptions="End"  
+                    VerticalOptions="End"  
+                    Margin="15"
+                    BackgroundColor="Red"
+                    TextColor="White"
+                    FontAttributes="Bold"
+                    WidthRequest="80"
+                    HeightRequest="80"
+                    CornerRadius="40" 
+                    ZIndex="99"/>
+        </Grid>
+
+        <!-- The status label remains at the bottom in the second row. -->
         <Border Grid.Row="1" StrokeThickness="1" Padding="10" Margin="5">
             <Label x:Name="StatusLabel" Text="Status: Initializing..." />
         </Border>
