@@ -72,6 +72,7 @@ namespace ScribbyApp.Views
         private async void OnPreviewClicked(object sender, EventArgs e)
         {
             // Check if there are unsaved changes
+            //
             bool isDirty = _isNewScript || (_currentScript?.Name != NameEntry.Text) || (_currentScript?.Code != CodeEditor.Text);
 
             if (isDirty)
