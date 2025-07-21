@@ -1,7 +1,7 @@
 #include <AFMotor.h>
 #include <SoftwareSerial.h>
 
-// =================== ROBOT CONFIGURATION (V15.1 - Corrected) ===================
+// =================== ROBOT CONFIGURATION ===================
 // --- 1. Hardware Mapping ---
 const int FRONT_LEFT_MOTOR_PORT  = 1;
 const int BACK_LEFT_MOTOR_PORT   = 2;
@@ -11,57 +11,100 @@ const int BLUETOOTH_RX_PIN = 9;
 const int BLUETOOTH_TX_PIN = 10;
 
 // --- 2. Performance Tuning ---
-const int MINIMUM_MOTOR_SPEED  = 80;
+const int MINIMUM_MOTOR_SPEED  = 0;
 const int MAXIMUM_MOTOR_SPEED  = 255;
-const int KICKSTART_DELAY_MS   = 100;
+const unsigned long KICKSTART_DURATION_MS = 80; // Renamed for clarity
 
 // --- 3. Primitive Movement Speed ---
 const int PRIMITIVE_MOVEMENT_SPEED = 255;
-// =================================================================
+// ===========================================================
 
 
-// --- System Internals (Optimized for performance) ---
+// --- System Internals ---
 SoftwareSerial BLESerial(BLUETOOTH_RX_PIN, BLUETOOTH_TX_PIN);
-AF_DCMotor motor_front_left(FRONT_LEFT_MOTOR_PORT);
-AF_DCMotor motor_front_right(FRONT_RIGHT_MOTOR_PORT);
-AF_DCMotor motor_back_left(BACK_LEFT_MOTOR_PORT);
-AF_DCMotor motor_back_right(BACK_RIGHT_MOTOR_PORT);
 
 const byte COMMAND_BUFFER_SIZE = 16;
 char command_buffer[COMMAND_BUFFER_SIZE];
 byte command_pos = 0;
 bool command_ready = false;
 
-// --- CORRECTED: Function Prototypes ---
-// This tells the compiler that these functions exist before they are used.
-void readSerialCommand();
-void processCommand();
-void handlePrimitiveCommand(char* cmd);
-void handleAdvancedCommand(char* cmd);
-void setMotorState(AF_DCMotor &motor, int newSpeed, uint8_t newDirection, bool kickstart);
-void forward(int speed = PRIMITIVE_MOVEMENT_SPEED, bool kick = false);
-void back(int speed = PRIMITIVE_MOVEMENT_SPEED, bool kick = false);
-void left();
-void right();
-void scribbystop();
+// --- Non-Blocking Motor Control Class ---
+// This class encapsulates the state for a single motor, including its kickstart timer.
+class MotorManager {
+public:
+    MotorManager(AF_DCMotor& motor_ref) : motor(motor_ref), targetSpeed(0), kickstartEndTime(0) {}
+
+    // The update() function MUST be called in every loop.
+    // It checks if a kickstart period is over and reduces speed if needed.
+    void update() {
+        if (kickstartEndTime != 0 && millis() >= kickstartEndTime) {
+            motor.setSpeed(targetSpeed);
+            kickstartEndTime = 0; // Deactivate kickstart timer
+        }
+    }
+
+    void set(int newSpeed, uint8_t newDirection, bool kickstart) {
+        targetSpeed = constrain(newSpeed, 0, MAXIMUM_MOTOR_SPEED);
+        
+        motor.run(newDirection);
+
+        if (kickstart && targetSpeed > 0) {
+            motor.setSpeed(MAXIMUM_MOTOR_SPEED);
+            // Set a timer for the future instead of using delay()
+            kickstartEndTime = millis() + KICKSTART_DURATION_MS;
+        } else {
+            motor.setSpeed(targetSpeed);
+            kickstartEndTime = 0; // Ensure no kickstart is active
+        }
+    }
+
+    void release() {
+        motor.run(RELEASE);
+        targetSpeed = 0;
+        kickstartEndTime = 0; // Cancel any ongoing kickstart
+    }
+
+private:
+    AF_DCMotor& motor;
+    int targetSpeed;
+    unsigned long kickstartEndTime;
+};
+
+// Create motor objects and their corresponding managers
+AF_DCMotor motor_fl_raw(FRONT_LEFT_MOTOR_PORT);
+AF_DCMotor motor_fr_raw(FRONT_RIGHT_MOTOR_PORT);
+AF_DCMotor motor_bl_raw(BACK_LEFT_MOTOR_PORT);
+AF_DCMotor motor_br_raw(BACK_RIGHT_MOTOR_PORT);
+
+MotorManager motor_front_left(motor_fl_raw);
+MotorManager motor_front_right(motor_fr_raw);
+MotorManager motor_back_left(motor_bl_raw);
+MotorManager motor_back_right(motor_br_raw);
 // --- End System Internals ---
 
 
 void setup() {
-  motor_front_left.setSpeed(PRIMITIVE_MOVEMENT_SPEED);
-  motor_front_right.setSpeed(PRIMITIVE_MOVEMENT_SPEED);
-  motor_back_left.setSpeed(PRIMITIVE_MOVEMENT_SPEED);
-  motor_back_right.setSpeed(PRIMITIVE_MOVEMENT_SPEED);
   BLESerial.begin(9600);
+  // No need to set initial speed here, the manager handles it.
 }
 
 void loop() {
+  // 1. Check for and read any incoming commands (non-blocking).
   readSerialCommand();
+
+  // 2. If a full command is ready, process it immediately.
   if (command_ready) {
     processCommand();
-    command_pos = 0;
+    command_pos = 0; // Reset for next command
     command_ready = false;
   }
+
+  // 3. IMPORTANT: Update all motor states on every single loop.
+  // This is the non-blocking magic. It checks timers and adjusts speeds.
+  motor_front_left.update();
+  motor_front_right.update();
+  motor_back_left.update();
+  motor_back_right.update();
 }
 
 void readSerialCommand() {
@@ -87,11 +130,11 @@ void processCommand() {
 }
 
 void handlePrimitiveCommand(char* cmd) {
-  if (strcmp(cmd, "w") == 0) forward();
-  else if (strcmp(cmd, "a") == 0) left();
-  else if (strcmp(cmd, "d") == 0) right();
-  else if (strcmp(cmd, "s") == 0) scribbystop();
-  else if (strcmp(cmd, "x") == 0) back();
+  if (strcmp(cmd, "w") == 0) go_forward(PRIMITIVE_MOVEMENT_SPEED, false);
+  else if (strcmp(cmd, "a") == 0) go_left();
+  else if (strcmp(cmd, "d") == 0) go_right();
+  else if (strcmp(cmd, "s") == 0) stop_all();
+  else if (strcmp(cmd, "x") == 0) go_back(PRIMITIVE_MOVEMENT_SPEED, false);
 }
 
 void handleAdvancedCommand(char* cmd) {
@@ -99,8 +142,7 @@ void handleAdvancedCommand(char* cmd) {
   if (hyphen == NULL) return;
 
   int speed = atoi(hyphen + 1);
-  speed = constrain(speed, MINIMUM_MOTOR_SPEED, MAXIMUM_MOTOR_SPEED);
-  *hyphen = '\0';
+  *hyphen = '\0'; // Split the string at the hyphen
 
   bool forceKickstart = false;
   int prefixLen = strlen(cmd);
@@ -116,56 +158,47 @@ void handleAdvancedCommand(char* cmd) {
   
   char* target = cmd + 1;
 
-  if (strcmp(target, "gfl") == 0) setMotorState(motor_front_left, speed, direction, forceKickstart);
-  else if (strcmp(target, "gfr") == 0) setMotorState(motor_front_right, speed, direction, forceKickstart);
-  else if (strcmp(target, "gbl") == 0) setMotorState(motor_back_left, speed, direction, forceKickstart);
-  else if (strcmp(target, "gbr") == 0) setMotorState(motor_back_right, speed, direction, forceKickstart);
+  if (strcmp(target, "gfl") == 0) motor_front_left.set(speed, direction, forceKickstart);
+  else if (strcmp(target, "gfr") == 0) motor_front_right.set(speed, direction, forceKickstart);
+  else if (strcmp(target, "gbl") == 0) motor_back_left.set(speed, direction, forceKickstart);
+  else if (strcmp(target, "gbr") == 0) motor_back_right.set(speed, direction, forceKickstart);
   else if (strcmp(target, "gall") == 0) {
-    if (direction == FORWARD) forward(speed, forceKickstart); else back(speed, forceKickstart);
+    if (direction == FORWARD) go_forward(speed, forceKickstart); else go_back(speed, forceKickstart);
   }
 }
 
-void setMotorState(AF_DCMotor &motor, int newSpeed, uint8_t newDirection, bool kickstart) {
-  if (kickstart) {
-    motor.setSpeed(MAXIMUM_MOTOR_SPEED);
-    motor.run(newDirection);
-    delay(KICKSTART_DELAY_MS);
-  }
-  motor.setSpeed(newSpeed);
-  motor.run(newDirection);
+// --- Movement Functions ---
+void go_forward(int speed, bool kick) {
+  motor_front_left.set(speed, FORWARD, kick);
+  motor_front_right.set(speed, FORWARD, kick);
+  motor_back_left.set(speed, FORWARD, kick);
+  motor_back_right.set(speed, FORWARD, kick);
 }
 
-void forward(int speed, bool kick) {
-  setMotorState(motor_front_left, speed, FORWARD, kick);
-  setMotorState(motor_front_right, speed, FORWARD, kick);
-  setMotorState(motor_back_left, speed, FORWARD, kick);
-  setMotorState(motor_back_right, speed, FORWARD, kick);
+void go_back(int speed, bool kick) {
+  motor_front_left.set(speed, BACKWARD, kick);
+  motor_front_right.set(speed, BACKWARD, kick);
+  motor_back_left.set(speed, BACKWARD, kick);
+  motor_back_right.set(speed, BACKWARD, kick);
 }
 
-void back(int speed, bool kick) {
-  setMotorState(motor_front_left, speed, BACKWARD, kick);
-  setMotorState(motor_front_right, speed, BACKWARD, kick);
-  setMotorState(motor_back_left, speed, BACKWARD, kick);
-  setMotorState(motor_back_right, speed, BACKWARD, kick);
+void go_left() {
+  motor_front_left.set(PRIMITIVE_MOVEMENT_SPEED, BACKWARD, false);
+  motor_back_left.set(PRIMITIVE_MOVEMENT_SPEED, BACKWARD, false);
+  motor_front_right.set(PRIMITIVE_MOVEMENT_SPEED, FORWARD, false);
+  motor_back_right.set(PRIMITIVE_MOVEMENT_SPEED, FORWARD, false);
 }
 
-void left() {
-  setMotorState(motor_front_left, PRIMITIVE_MOVEMENT_SPEED, BACKWARD, false);
-  setMotorState(motor_back_left, PRIMITIVE_MOVEMENT_SPEED, BACKWARD, false);
-  setMotorState(motor_front_right, PRIMITIVE_MOVEMENT_SPEED, FORWARD, false);
-  setMotorState(motor_back_right, PRIMITIVE_MOVEMENT_SPEED, FORWARD, false);
+void go_right() {
+  motor_front_left.set(PRIMITIVE_MOVEMENT_SPEED, FORWARD, false);
+  motor_back_left.set(PRIMITIVE_MOVEMENT_SPEED, FORWARD, false);
+  motor_front_right.set(PRIMITIVE_MOVEMENT_SPEED, BACKWARD, false);
+  motor_back_right.set(PRIMITIVE_MOVEMENT_SPEED, BACKWARD, false);
 }
 
-void right() {
-  setMotorState(motor_front_left, PRIMITIVE_MOVEMENT_SPEED, FORWARD, false);
-  setMotorState(motor_back_left, PRIMITIVE_MOVEMENT_SPEED, FORWARD, false);
-  setMotorState(motor_front_right, PRIMITIVE_MOVEMENT_SPEED, BACKWARD, false);
-  setMotorState(motor_back_right, PRIMITIVE_MOVEMENT_SPEED, BACKWARD, false);
-}
-
-void scribbystop() {
-  motor_front_left.run(RELEASE);
-  motor_front_right.run(RELEASE);
-  motor_back_left.run(RELEASE);
-  motor_back_right.run(RELEASE);
+void stop_all() {
+  motor_front_left.release();
+  motor_front_right.release();
+  motor_back_left.release();
+  motor_back_right.release();
 }

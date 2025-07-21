@@ -60,7 +60,7 @@ Give you precise control over motors, speed, and kickstart.
 
     [k]: Optional 'k' for a Kickstart (short power burst)
 
-    <speed>: Range from 80 to 255
+    <speed>: Range from 0 to 255
 
 #### Example:
 
@@ -220,7 +220,7 @@ This version includes:
 
     fgfl  = Forward Go Front Left motor
     k     = Kickstart
-    100   = Speed (range: 80–255)
+    100   = Speed (keep speed range is better: 80–255)
 
 Full meaning:
 
