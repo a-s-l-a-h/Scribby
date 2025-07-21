@@ -133,14 +133,13 @@ This version includes:
 - Uses `fgflk-<speed>` format
 
 ---
-
+```
 <!DOCTYPE html>
 <html>
 <head>
     <title>Scribby Pro Controller</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <style>
-        /* CSS variables for easy theme changes */
         :root {
             --bg-color: #36393f;
             --button-bg: #5865f2;
@@ -352,7 +351,7 @@ This version includes:
     </div>
 </body>
 </html>
-
+```
 ---
 
 ## 🔍 Breakdown of `fgflk-100`
