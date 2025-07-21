@@ -34,12 +34,13 @@
         </Tab>
 
 
-                <Tab Title="Scripts" Icon="code.png"> <!-- Add a code.png icon to Resources/Images -->
+         <Tab Title="Scripts" Icon="code.png"> <!-- Add a code.png icon to Resources/Images -->
             <ShellContent
                 Title="Scripts"
                 ContentTemplate="{DataTemplate views:CodeListPage}"
                 Route="CodeListPage" />
-        </Tab>
+         </Tab>
+        
 
     </TabBar>
 

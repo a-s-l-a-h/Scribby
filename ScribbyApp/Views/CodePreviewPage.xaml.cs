@@ -31,6 +31,27 @@ namespace ScribbyApp.Views
             this.Loaded += WebViewPage_Loaded;
         }
 
+        // --- NEW METHOD ---
+        // This method intercepts the system back button press.
+        protected override bool OnBackButtonPressed()
+        {
+            // Check if the WebView can navigate backwards in its history
+            if (PreviewWebView.CanGoBack)
+            {
+                // If it can, perform the back navigation within the WebView
+                PreviewWebView.GoBack();
+                // Return true to indicate we've handled the event and to
+                // prevent the app from navigating back a page.
+                return true;
+            }
+            else
+            {
+                // If the WebView cannot go back, return false to allow the
+                // default system behavior (which is to navigate back a page).
+                return base.OnBackButtonPressed();
+            }
+        }
+
         protected override void OnAppearing()
         {
             base.OnAppearing();
@@ -59,34 +80,25 @@ namespace ScribbyApp.Views
             await ConfigureNativeWebView();
         }
 
-        /// <summary>
-        /// UPDATED: Handles the click of the floating Stop/Resume button.
-        /// Now also changes the button's background color for better visual feedback.
-        /// </summary>
         private async void OnEmergencyStopClicked(object sender, EventArgs e)
         {
             _isPausedByButton = !_isPausedByButton; // Toggle the state
 
             if (_isPausedByButton)
             {
-                // State is now PAUSED
                 EmergencyStopButton.Text = "Resume";
-                EmergencyStopButton.BackgroundColor = Colors.Green; // Change color to indicate it's safe to resume
-                await SendCommandInternalAsync("s"); // Send an immediate stop command
+                EmergencyStopButton.BackgroundColor = Colors.Green;
+                await SendCommandInternalAsync("s");
                 StatusLabel.Text = "Status: Paused by user. Press 'Resume' to continue.";
             }
             else
             {
-                // State is now RESUMED
                 EmergencyStopButton.Text = "Stop";
-                EmergencyStopButton.BackgroundColor = Colors.Red; // Change color back to the "danger" state
-                UpdateStatus(); // Restore the status label
+                EmergencyStopButton.BackgroundColor = Colors.Red;
+                UpdateStatus();
             }
         }
 
-        /// <summary>
-        /// Handles the custom "scribby://" URL scheme, now with length validation.
-        /// </summary>
         private async void OnWebViewNavigating(object? sender, WebNavigatingEventArgs e)
         {
             if (e.Url == null || !e.Url.StartsWith("scribby://")) return;
@@ -138,7 +150,7 @@ namespace ScribbyApp.Views
 
         private void UpdateStatus()
         {
-            if (_isPausedByButton) return; // Don't change status if manually paused
+            if (_isPausedByButton) return;
 
             StatusLabel.Text = _bluetoothService.IsConnected
                 ? $"Status: Connected to {_bluetoothService.GetCurrentlyConnectedDeviceSomehow()?.Name}."
@@ -177,7 +189,7 @@ namespace ScribbyApp.Views
                 platformView.Settings.JavaScriptEnabled = true;
                 platformView.Settings.AllowFileAccess = true;
                 platformView.Settings.AllowFileAccessFromFileURLs = true;
-                //platformViev.Settings.AllowUniversalAccessFromFileURLs = true;
+                //platformView.Settings.AllowUniversalAccessFromFileURLs = true;
             }
 #elif IOS
             var platformView = PreviewWebView.Handler.PlatformView as WebKit.WKWebView;
