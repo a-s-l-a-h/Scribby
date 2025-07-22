@@ -50,14 +50,13 @@ namespace ScribbyApp.Views
 <html>
 <head>
     <title>My New Script</title>
-    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <link rel=""stylesheet"" href=""css/index.css"" />
+    
 </head>
 <body>
-    <div class=""container"">
+    
         <h1>Hello from my new script!</h1>
-        <p>This script can use relative paths to CSS and JS files.</p>
-        <a href=""hello-cube.html"">Load AR Cube</a>
+        
+       
     </div>
 </body>
 </html>",
