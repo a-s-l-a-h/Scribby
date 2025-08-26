@@ -10,7 +10,7 @@ namespace ScribbyApp.Views
     {
         private readonly DatabaseService _databaseService;
         private readonly Random _random = new();
-        private readonly List<string> _icons = new() { "dotnet_bot.png", "home.png", "settings.png", "webview.png" };
+        private readonly List<string> _icons = new() { "script_image.jpg" };
 
         public CodeListPage(DatabaseService databaseService)
         {
@@ -54,7 +54,7 @@ namespace ScribbyApp.Views
 </head>
 <body>
     
-        <h1>Hello from my new script!</h1>
+    
         
        
     </div>
