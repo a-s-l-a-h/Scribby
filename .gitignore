@@ -19,7 +19,8 @@ backup/
 
 **/*.so
 **/*.dll
-
+**/*.gguf
+**/*.mp4
 # --- Other Generated Files & Caches ---
 # Log files
 *.log
