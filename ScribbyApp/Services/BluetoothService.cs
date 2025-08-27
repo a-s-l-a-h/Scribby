@@ -189,15 +189,16 @@ public class BluetoothService : IDisposable
 
     public async Task SendCommandAsync(ICharacteristic characteristic, string command)
     {
-        // This method remains unchanged...
+       
         try
         {
             var bytes = Encoding.UTF8.GetBytes(command + "\n");
             var success = await characteristic.WriteAsync(bytes);
             if (success > 0)
                 StatusChanged?.Invoke(this, $"Sent '{command}' successfully.");
-            else
-                StatusChanged?.Invoke(this, $"Failed to send '{command}'.");
+            //else
+                //StatusChanged?.Invoke(this, $"Failed to send '{command}'.");
+                //StatusChanged?.Invoke(this, $"Failed to send '{command}'.");
         }
         catch (Exception ex)
         {

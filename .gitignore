@@ -6,6 +6,7 @@
 # open documents, window layouts, and breakpoints.
 .vs/
 backup/
+docs/
 
 # User-specific settings files
 *.suo
