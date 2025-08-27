@@ -7,6 +7,7 @@
 .vs/
 backup/
 docs/
+fullcode/
 
 # User-specific settings files
 *.suo
