@@ -1,4 +1,4 @@
-# Scribby: The Scriptable Robot Control
+# Scribby: The Scriptable Robot
 
 
 
