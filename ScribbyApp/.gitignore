@@ -77,6 +77,5 @@ desktop.ini
 *.dat
 *.pat
 *.patt
-**/images/
 **/image/
 **/markers/
