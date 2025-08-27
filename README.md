@@ -1,8 +1,165 @@
+# Scribby: The Scriptable Robot Control
+
+
+
+**Scribby** is an innovative robotics project that combines a versatile Arduino-powered bot with a modern, cross-platform control application built with .NET MAUI.
+
+---
+
+
+
+
+
+## 🎥 Demos
+
+<table align="center">
+  <tr>
+    <td align="center">
+      <h3>💻 Windows Demo</h3>
+      <video src="https://github.com/user-attachments/assets/63bf4ca0-120c-4bbb-9e21-a3d4fbfc2d2e"
+             controls
+             muted
+             loop
+             style="max-width:100%; border-radius: 8px;">
+        Your browser does not support the video tag.
+      </video>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <h3>📱 Android Demo</h3>
+      <video src="https://github.com/user-attachments/assets/f65cb6ee-6162-45e9-9662-74593921ce70"
+             controls
+             muted
+             loop
+             style="max-width:100%; border-radius: 8px;">
+        Your browser does not support the video tag.
+      </video>
+    </td>
+  </tr>
+</table>
+
+
+---
+
+## 💡 Philosophy
+
+Our core philosophy is built on three pillars: accessibility, customization, and control.
+
+*   **📱 Cross-Platform Control:** The `ScribbyApp` is built with .NET MAUI, allowing you to connect to and control your robot from a single codebase on **Android, iOS, and Windows**.
+
+*   **📜 Limitless Scripting:** Orchestrate complex robotic behaviors. The app features a powerful scripting engine that uses **HTML and JavaScript** to go beyond simple remote controls. Automate sequences of movements, create dynamic responses to user input, or design sophisticated control interfaces. Your web development skills are the key to unlocking Scribby's full potential.
+
+*   **⚡ Real-Time Responsiveness:** The communication protocol is designed for immediate action. Send commands from your custom JavaScript interface directly to the bot. The application includes critical safety features like an **emergency stop and resume** button that gives you application-level control to instantly pause and un-pause the robot's operation, overriding any running script.
+
+---
+
+## 🏗️ How to Build
+
+The project is divided into two main parts: `ScribbyApp` (the controller) and `ScribbyFirmware` (the robot's brain).
+
+###  Building the ScribbyBot (Firmware)
+
+The ScribbyBot is a 4-wheel drive robot powered by an Arduino and a motor shield. This project exclusively supports **Bluetooth Low Energy (BLE)** for communication.
+
+#### **Hardware Required**
+*   **Microcontroller:** An Arduino Uno board.
+*   **Motor Shield:** An L293D-based motor driver shield for Arduino.
+    *   *Features*: Must be capable of controlling four DC motors independently. It should support a motor voltage range of 4.5V to 25V and provide at least 0.6A of continuous current per motor.
+*   **Chassis:** A 4-wheel drive (4WD) robot chassis platform.
+*   **Motors:** Four plastic, dual-shaft DC gear motors.
+    *   *Features*: Should operate within a 3V to 9V range, suitable for toy car applications.
+*   **Bluetooth Module:** A BLE 4.0 module based on the CC2540 or CC2541 chipset (often sold as HM-10 compatible). **Classic Bluetooth modules like the HC-05/06 are not compatible.**
+*   **Power Source:**
+    *   Two 3.7V rechargeable batteries (e.g., Li-Ion 18650).
+    *   A battery holder for the two cells.
+*   **Cables:** A standard Arduino USB cable (Type A to Type B) for uploading the firmware.
+
+#### **Assembly & Wiring**
+1.  **Mount Components:** Assemble the 4WD robot chassis, attaching the four motors and wheels. Find a secure place on the chassis to mount the Arduino and the battery holder.
+2.  **Attach Motor Shield:** Firmly stack the motor shield on top of the Arduino Uno, ensuring all pins are correctly seated.
+3.  **Connect Motors, Power, and BLE:** Wire the components to the motor shield as shown in the diagram below.
+    *   Connect the four motors to the `M1`, `M2`, `M3`, and `M4` terminals.
+    *   Connect the battery pack to the external power input (`EXT_PWR`).
+    *   Connect the BLE module to the 5V, GND, and Digital Pins 9 and 10.
+
+    <img width="1166" height="700" alt="circuit" src="https://github.com/user-attachments/assets/12dbc6e8-38ba-46c6-af9c-de1b251a9571" />
+
+4.  **Detailed BLE Wiring:**
+    *   **BT VCC Pin** → **5V** on the shield
+    *   **BT GND Pin** → **GND** on the shield
+    *   **BT TXD Pin** → **Pin 10** on the shield (marked for SERVO 1)
+    *   **BT RXD Pin** → **Pin 9** on the shield (marked for SERVO 2)
+    > **Why these pins?** These pins are chosen for convenience, as they correspond to the **SERVO 1** and **SERVO 2** headers on the motor shield. This provides a neat 3-pin block with 5V, GND, and signal pins all in one place. The firmware uses `SoftwareSerial` on these pins to create a dedicated communication channel for the BLE module, leaving the main USB port (pins 0 and 1) free so you can upload code without ever needing to disconnect the module.
+
+#### **Flashing the Firmware**
+1.  **Install Arduino IDE:** Download and install the latest version of the [Arduino IDE](https://www.arduino.cc/en/software) from the official website.
+2.  **Install Required Libraries:**
+    *   Open the Arduino IDE.
+    *   Go to `Sketch` -> `Include Library` -> `Manage Libraries...`.
+    *   In the search box, type **"Adafruit Motor Shield library"** and install the V1 library by Adafruit. (This library is also compatible with most V2 and clone shields).
+    *   The `SoftwareSerial` library is built-in and does not require installation.
+3.  **Upload the Sketch:**
+    *   Connect the Arduino Uno to your computer with the USB cable.
+    *   Open the `ScribbyFirmware/Arduino/Scribby/Scribby.ino` sketch in the Arduino IDE.
+    *   Go to `Tools` -> `Board` and select "Arduino Uno".
+    *   Go to `Tools` -> `Port` and select the correct COM port for your Arduino.
+    *   Click the "Upload" button (the right-arrow icon) to flash the firmware.
+
+### 📱 Building the ScribbyApp (.NET MAUI)
+
+The control application is a .NET MAUI project.
+
+**Prerequisites:**
+*   [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+*   [Visual Studio 2022](https://visualstudio.microsoft.com/) with the ".NET Multi-platform App UI development" workload installed.
+
+**Instructions:**
+1.  **Open the Solution:**
+    *   Launch Visual Studio and open the `ScribbyApp/ScribbyApp.sln` solution file.
+2.  **Restore Dependencies:**
+    *   Visual Studio should automatically restore the required NuGet packages. If not, right-click the solution in the Solution Explorer and choose "Restore NuGet Packages."
+3.  **Build and Run:**
+    *   Select your target platform (e.g., a connected Android device, the Windows Machine, or an iOS simulator).
+    *   Press the "Start" button to build and deploy the application.
+
+---
+## 📁 Project Structure
+
+<details>
+<summary>Click to view the directory tree</summary>
+
+```Scribby
+├── Examples/
+│   ├── Particles.html
+│   ├── ProController.html
+│   └── clickmovement.html
+├── README.md
+├── ScribbyApp/
+│   ├── Models/
+│   ├── Platforms/
+│   ├── Properties/
+│   ├── Resources/
+│   ├── Services/
+│   ├── ViewModels/
+│   └── Views/
+└── ScribbyFirmware/
+    ├── Arduino/
+    │   └── Scribby/
+    │       └── Scribby.ino
+    └── README.md
+```
+</details>
+
+---
+
 # ScribbyApp Scripting Guide
 
 Welcome to the most powerful feature of the ScribbyApp: **Scripts**. This feature allows you to create fully custom remote control interfaces for Scribby using standard web technologies: **HTML and JavaScript**.
 
 ---
+
+
 
 ## 📜 How to Use the Scripts Page
 
