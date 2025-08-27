@@ -122,7 +122,7 @@ public partial class ControlPage : ContentPage
     }
 #endif
 
-    // --- EXISTING METHODS (no changes below this line) ---
+    
 
     private void UpdateControlsState()
     {
